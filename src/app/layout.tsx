@@ -1,12 +1,29 @@
 import type { Metadata } from "next";
-import { Geist_Mono, Noto_Sans_Arabic } from "next/font/google";
+import { Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 
 import { DirectionProvider } from "@/components/ui/direction";
 
 import "./globals.css";
 
-const fontSans = Noto_Sans_Arabic({
-  subsets: ["arabic"],
+const samim = localFont({
+  src: [
+    {
+      path: "./fonts/Samim.woff2",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "./fonts/Samim-Medium.woff2",
+      weight: "500",
+      style: "normal",
+    },
+    {
+      path: "./fonts/Samim-Bold.woff2",
+      weight: "700",
+      style: "normal",
+    },
+  ],
   variable: "--font-sans",
   display: "swap",
 });
@@ -29,7 +46,7 @@ export default function RootLayout({
   return (
     <html lang="fa" dir="rtl">
       <body
-        className={`${fontSans.variable} ${fontMono.variable} antialiased`}
+        className={`${samim.className} ${samim.variable} ${fontMono.variable} antialiased`}
       >
         <DirectionProvider direction="rtl">
           {children}
