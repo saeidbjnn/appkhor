@@ -1,6 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import {
+  type MouseEvent,
+  useEffect,
+  useState,
+} from "react";
 
 type Theme = "light" | "dark";
 
@@ -128,6 +132,41 @@ export default function Home() {
     document.documentElement.style.colorScheme = newTheme;
   }
 
+  function scrollToSection(sectionId: string) {
+    const element = document.getElementById(sectionId);
+
+    if (!element) {
+      return;
+    }
+
+    const headerOffset = 96;
+
+    const elementPosition =
+      element.getBoundingClientRect().top + window.scrollY;
+
+    const targetPosition =
+      elementPosition - headerOffset;
+
+    window.scrollTo({
+      top: targetPosition,
+      behavior: "smooth",
+    });
+
+    window.history.replaceState(
+      null,
+      "",
+      `#${sectionId}`,
+    );
+  }
+
+  function handleSectionClick(
+    event: MouseEvent<HTMLAnchorElement>,
+    sectionId: string,
+  ) {
+    event.preventDefault();
+    scrollToSection(sectionId);
+  }
+
   return (
     <main
       dir="rtl"
@@ -151,11 +190,15 @@ export default function Home() {
             </span>
 
             <div>
-              <strong className="block text-xl font-black">اپ‌خور</strong>
+              <strong className="block text-xl font-black">
+                اپ‌خور
+              </strong>
 
               <span
                 className={`text-xs ${
-                  isDark ? "text-zinc-400" : "text-zinc-500"
+                  isDark
+                    ? "text-zinc-400"
+                    : "text-zinc-500"
                 }`}
               >
                 اپ‌های مفید، یک‌جا
@@ -165,25 +208,45 @@ export default function Home() {
 
           <nav
             className={`hidden items-center gap-8 text-sm font-bold md:flex ${
-              isDark ? "text-zinc-300" : "text-zinc-600"
+              isDark
+                ? "text-zinc-300"
+                : "text-zinc-600"
             }`}
           >
-            <a href="/" className="text-emerald-500">
+            <a
+              href="/"
+              className="text-emerald-500"
+            >
               صفحه اصلی
             </a>
 
-            <a href="#apps" className="transition hover:text-emerald-500">
-              همه اپ‌ها
-            </a>
+            <a
+  href="#categories"
+  onClick={(event) =>
+    handleSectionClick(event, "categories")
+  }
+  className="transition hover:text-emerald-500"
+>
+  دسته‌بندی‌ها
+</a>
+
+<a
+  href="#apps"
+  onClick={(event) =>
+    handleSectionClick(event, "apps")
+  }
+  className="transition hover:text-emerald-500"
+>
+  همه اپ‌ها
+</a>
 
             <a
-              href="#categories"
+              href="#about"
+              onClick={(event) =>
+                handleSectionClick(event, "about")
+              }
               className="transition hover:text-emerald-500"
             >
-              دسته‌بندی‌ها
-            </a>
-
-            <a href="#about" className="transition hover:text-emerald-500">
               درباره ما
             </a>
           </nav>
@@ -193,14 +256,22 @@ export default function Home() {
               type="button"
               onClick={toggleTheme}
               aria-label="تغییر حالت نمایش"
-              title={isDark ? "حالت روشن" : "حالت شب"}
+              title={
+                isDark
+                  ? "حالت روشن"
+                  : "حالت شب"
+              }
               className={`flex h-11 w-11 items-center justify-center rounded-xl border text-lg transition ${
                 isDark
                   ? "border-white/10 bg-white/5 hover:bg-white/10"
                   : "border-zinc-200 bg-white hover:border-emerald-300 hover:bg-emerald-50"
               }`}
             >
-              {mounted ? (isDark ? "☀️" : "🌙") : "🌙"}
+              {mounted
+                ? isDark
+                  ? "☀️"
+                  : "🌙"
+                : "🌙"}
             </button>
 
             <a
@@ -251,17 +322,24 @@ export default function Home() {
 
             <h1 className="max-w-3xl text-4xl font-black leading-[1.35] tracking-tight sm:text-5xl lg:text-6xl">
               اپ‌های مفید را
-              <span className="text-emerald-600"> پیدا کن، اجرا کن </span>
+              <span className="text-emerald-600">
+                {" "}
+                پیدا کن، اجرا کن{" "}
+              </span>
               و دانلود کن
             </h1>
 
             <p
               className={`mt-6 max-w-2xl text-base leading-8 sm:text-lg ${
-                isDark ? "text-zinc-400" : "text-zinc-600"
+                isDark
+                  ? "text-zinc-400"
+                  : "text-zinc-600"
               }`}
             >
-              اپ‌خور جایی برای معرفی و دانلود اپلیکیشن‌ها و ابزارهای HTML
-              تحت وب است؛ ساده، سریع و بدون شلوغی‌های اضافه.
+              اپ‌خور جایی برای معرفی و دانلود
+              اپلیکیشن‌ها و ابزارهای HTML تحت وب
+              است؛ ساده، سریع و بدون شلوغی‌های
+              اضافه.
             </p>
 
             <div
@@ -274,7 +352,9 @@ export default function Home() {
               <div className="flex items-center gap-3">
                 <span
                   className={`mr-3 ${
-                    isDark ? "text-zinc-500" : "text-zinc-400"
+                    isDark
+                      ? "text-zinc-500"
+                      : "text-zinc-400"
                   }`}
                 >
                   <SearchIcon />
@@ -301,13 +381,17 @@ export default function Home() {
 
             <div
               className={`mt-8 flex flex-wrap items-center gap-x-8 gap-y-4 text-sm ${
-                isDark ? "text-zinc-400" : "text-zinc-600"
+                isDark
+                  ? "text-zinc-400"
+                  : "text-zinc-600"
               }`}
             >
               <div>
                 <strong
                   className={`ml-1 text-xl font-black ${
-                    isDark ? "text-white" : "text-zinc-900"
+                    isDark
+                      ? "text-white"
+                      : "text-zinc-900"
                   }`}
                 >
                   ۳۱+
@@ -318,7 +402,9 @@ export default function Home() {
               <div>
                 <strong
                   className={`ml-1 text-xl font-black ${
-                    isDark ? "text-white" : "text-zinc-900"
+                    isDark
+                      ? "text-white"
+                      : "text-zinc-900"
                   }`}
                 >
                   ۹K+
@@ -329,7 +415,9 @@ export default function Home() {
               <div>
                 <strong
                   className={`ml-1 text-xl font-black ${
-                    isDark ? "text-white" : "text-zinc-900"
+                    isDark
+                      ? "text-white"
+                      : "text-zinc-900"
                   }`}
                 >
                   ۱۰۰٪
@@ -383,7 +471,9 @@ export default function Home() {
                   >
                     <span
                       className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-xl ${
-                        isDark ? "bg-emerald-950" : "bg-emerald-100"
+                        isDark
+                          ? "bg-emerald-950"
+                          : "bg-emerald-100"
                       }`}
                     >
                       {app.icon}
@@ -394,11 +484,7 @@ export default function Home() {
                         {app.name}
                       </strong>
 
-                      <span
-                        className={`mt-1 block text-xs ${
-                          isDark ? "text-zinc-500" : "text-zinc-500"
-                        }`}
-                      >
+                      <span className="mt-1 block text-xs text-zinc-500">
                         {app.downloads} دانلود
                       </span>
                     </div>
@@ -424,11 +510,16 @@ export default function Home() {
               دسترسی سریع
             </span>
 
-            <h2 className="mt-2 text-3xl font-black">دسته‌بندی اپ‌ها</h2>
+            <h2 className="mt-2 text-3xl font-black">
+              دسته‌بندی اپ‌ها
+            </h2>
           </div>
 
           <a
             href="#apps"
+            onClick={(event) =>
+              handleSectionClick(event, "apps")
+            }
             className="inline-flex items-center gap-2 text-sm font-bold text-emerald-600"
           >
             مشاهده همه دسته‌ها
@@ -440,6 +531,9 @@ export default function Home() {
           {categories.map((category) => (
             <a
               href="#apps"
+              onClick={(event) =>
+                handleSectionClick(event, "apps")
+              }
               key={category.name}
               className={`group rounded-2xl border p-5 transition hover:-translate-y-1 ${
                 isDark
@@ -450,7 +544,9 @@ export default function Home() {
               <div className="flex items-center justify-between">
                 <span
                   className={`flex h-12 w-12 items-center justify-center rounded-2xl text-xl ${
-                    isDark ? "bg-emerald-950" : "bg-emerald-50"
+                    isDark
+                      ? "bg-emerald-950"
+                      : "bg-emerald-50"
                   }`}
                 >
                   {category.icon}
@@ -458,20 +554,20 @@ export default function Home() {
 
                 <span
                   className={`transition group-hover:text-emerald-500 ${
-                    isDark ? "text-zinc-700" : "text-zinc-300"
+                    isDark
+                      ? "text-zinc-700"
+                      : "text-zinc-300"
                   }`}
                 >
                   <ArrowIcon />
                 </span>
               </div>
 
-              <h3 className="mt-6 font-black">{category.name}</h3>
+              <h3 className="mt-6 font-black">
+                {category.name}
+              </h3>
 
-              <p
-                className={`mt-2 text-sm ${
-                  isDark ? "text-zinc-500" : "text-zinc-500"
-                }`}
-              >
+              <p className="mt-2 text-sm text-zinc-500">
                 {category.count}
               </p>
             </a>
@@ -522,7 +618,9 @@ export default function Home() {
                   <div className="flex items-start justify-between gap-4">
                     <span
                       className={`flex h-16 w-16 items-center justify-center rounded-2xl text-3xl ${
-                        isDark ? "bg-emerald-950" : "bg-emerald-50"
+                        isDark
+                          ? "bg-emerald-950"
+                          : "bg-emerald-50"
                       }`}
                     >
                       {app.icon}
@@ -545,11 +643,15 @@ export default function Home() {
                     {app.category}
                   </span>
 
-                  <h3 className="mt-2 text-xl font-black">{app.name}</h3>
+                  <h3 className="mt-2 text-xl font-black">
+                    {app.name}
+                  </h3>
 
                   <p
                     className={`mt-3 min-h-16 text-sm leading-7 ${
-                      isDark ? "text-zinc-400" : "text-zinc-600"
+                      isDark
+                        ? "text-zinc-400"
+                        : "text-zinc-600"
                     }`}
                   >
                     {app.description}
@@ -566,6 +668,7 @@ export default function Home() {
                       <span className="block text-xs text-zinc-500">
                         نسخه
                       </span>
+
                       <strong className="mt-1 block text-xs">
                         {app.version}
                       </strong>
@@ -575,6 +678,7 @@ export default function Home() {
                       <span className="block text-xs text-zinc-500">
                         حجم
                       </span>
+
                       <strong className="mt-1 block text-xs">
                         {app.size}
                       </strong>
@@ -584,6 +688,7 @@ export default function Home() {
                       <span className="block text-xs text-zinc-500">
                         دانلود
                       </span>
+
                       <strong className="mt-1 block text-xs">
                         {app.downloads}
                       </strong>
@@ -593,7 +698,9 @@ export default function Home() {
 
                 <div
                   className={`flex items-center gap-3 border-t p-4 ${
-                    isDark ? "border-white/10" : "border-zinc-100"
+                    isDark
+                      ? "border-white/10"
+                      : "border-zinc-100"
                   }`}
                 >
                   <button
@@ -637,12 +744,15 @@ export default function Home() {
               </span>
 
               <h2 className="mt-3 text-3xl font-black leading-tight md:text-4xl">
-                حمایت تو باعث ساخت ابزارهای کاربردی بیشتر می‌شود
+                حمایت تو باعث ساخت ابزارهای کاربردی
+                بیشتر می‌شود
               </h2>
 
               <p className="mt-5 leading-8 text-emerald-50/75">
-                اگر اپ‌خور برایت مفید بوده، می‌توانی با یک حمایت کوچک به
-                ادامه توسعه سایت و اضافه‌شدن ابزارهای جدید کمک کنی.
+                اگر اپ‌خور برایت مفید بوده،
+                می‌توانی با یک حمایت کوچک به ادامه
+                توسعه سایت و اضافه‌شدن ابزارهای جدید
+                کمک کنی.
               </p>
             </div>
 
@@ -673,42 +783,75 @@ export default function Home() {
                 ا
               </span>
 
-              <strong className="text-xl font-black">اپ‌خور</strong>
+              <strong className="text-xl font-black">
+                اپ‌خور
+              </strong>
             </div>
 
             <p
               className={`mt-4 max-w-sm text-sm leading-7 ${
-                isDark ? "text-zinc-500" : "text-zinc-500"
+                isDark
+                  ? "text-zinc-500"
+                  : "text-zinc-500"
               }`}
             >
-              مرجعی ساده و فارسی برای معرفی، اجرای آنلاین و دانلود
-              اپلیکیشن‌ها و ابزارهای کاربردی.
+              مرجعی ساده و فارسی برای معرفی، اجرای
+              آنلاین و دانلود اپلیکیشن‌ها و ابزارهای
+              کاربردی.
             </p>
           </div>
 
           <div>
-            <strong className="font-black">دسترسی سریع</strong>
+            <strong className="font-black">
+              دسترسی سریع
+            </strong>
 
             <div className="mt-4 flex flex-col gap-3 text-sm text-zinc-500">
-              <a href="/" className="hover:text-emerald-600">
+              <a
+                href="/"
+                className="hover:text-emerald-600"
+              >
                 صفحه اصلی
               </a>
 
-              <a href="#apps" className="hover:text-emerald-600">
+              <a
+                href="#apps"
+                onClick={(event) =>
+                  handleSectionClick(
+                    event,
+                    "apps",
+                  )
+                }
+                className="hover:text-emerald-600"
+              >
                 همه اپ‌ها
               </a>
 
-              <a href="#categories" className="hover:text-emerald-600">
+              <a
+                href="#categories"
+                onClick={(event) =>
+                  handleSectionClick(
+                    event,
+                    "categories",
+                  )
+                }
+                className="hover:text-emerald-600"
+              >
                 دسته‌بندی‌ها
               </a>
             </div>
           </div>
 
           <div>
-            <strong className="font-black">مدیریت سایت</strong>
+            <strong className="font-black">
+              مدیریت سایت
+            </strong>
 
             <div className="mt-4 flex flex-col gap-3 text-sm text-zinc-500">
-              <a href="/admin" className="hover:text-emerald-600">
+              <a
+                href="/admin"
+                className="hover:text-emerald-600"
+              >
                 ورود مدیر
               </a>
 
@@ -726,12 +869,19 @@ export default function Home() {
 
         <div
           className={`border-t ${
-            isDark ? "border-white/10" : "border-zinc-100"
+            isDark
+              ? "border-white/10"
+              : "border-zinc-100"
           }`}
         >
           <div className="mx-auto flex max-w-7xl flex-col gap-2 px-5 py-5 text-xs text-zinc-500 sm:flex-row sm:justify-between lg:px-8">
-            <span>تمام حقوق برای اپ‌خور محفوظ است.</span>
-            <span>ساخته‌شده برای کاربران فارسی‌زبان</span>
+            <span>
+              تمام حقوق برای اپ‌خور محفوظ است.
+            </span>
+
+            <span>
+              ساخته‌شده برای کاربران فارسی‌زبان
+            </span>
           </div>
         </div>
       </footer>
