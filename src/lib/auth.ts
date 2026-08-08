@@ -10,9 +10,11 @@ function bytesToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
-function base64ToBytes(value: string): Uint8Array {
+function base64ToBytes(value: string): Uint8Array<ArrayBuffer> {
   const binary = atob(value);
-  const bytes = new Uint8Array(binary.length);
+
+  const buffer = new ArrayBuffer(binary.length);
+  const bytes = new Uint8Array(buffer);
 
   for (let index = 0; index < binary.length; index += 1) {
     bytes[index] = binary.charCodeAt(index);
@@ -59,6 +61,7 @@ export function validatePassword(password: string): string | null {
 
 export async function hashPassword(password: string): Promise<string> {
   const encoder = new TextEncoder();
+
   const salt = crypto.getRandomValues(new Uint8Array(16));
 
   const passwordKey = await crypto.subtle.importKey(
