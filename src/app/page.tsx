@@ -231,10 +231,7 @@ export default function Home() {
 </a>
 
 <a
-  href="#apps"
-  onClick={(event) =>
-    handleSectionClick(event, "apps")
-  }
+  href="/apps"
   className="transition hover:text-emerald-500"
 >
   همه اپ‌ها
