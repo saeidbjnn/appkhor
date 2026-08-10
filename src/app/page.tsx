@@ -822,7 +822,7 @@ export default function Home() {
               </a>
 
               <a
-                href="#categories"
+                href="categories"
                 onClick={(event) =>
                   handleSectionClick(
                     event,
