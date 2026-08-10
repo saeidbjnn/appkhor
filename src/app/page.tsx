@@ -221,10 +221,7 @@ export default function Home() {
             </a>
 
             <a
-  href="#categories"
-  onClick={(event) =>
-    handleSectionClick(event, "categories")
-  }
+  href="/categories"
   className="transition hover:text-emerald-500"
 >
   دسته‌بندی‌ها

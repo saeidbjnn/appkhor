@@ -473,7 +473,7 @@ export default function AppsPage() {
             </a>
 
             <a
-              href="/#categories"
+              href="/categories"
               className="transition hover:text-emerald-500"
             >
               دسته‌بندی‌ها
