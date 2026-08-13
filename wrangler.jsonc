@@ -36,7 +36,7 @@
 			"binding": "appkhor_db",
 			"database_name": "appkhor-db",
 			"database_id": "e2fc3a8a-7ed9-4d6b-b55e-3238a53e03e7",
-			"remote": true
+			"remote": false
 		}
 	]
 }

@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import AuthButton from "@/components/auth/auth-button";
+import { useAppTheme } from "@/components/app-theme-provider";
+import Link from "next/link";
 
-type Theme = "light" | "dark";
 type TransitionPhase = "idle" | "leaving" | "entering";
 
 const APPS_PER_PAGE = 9;
@@ -206,8 +208,7 @@ const allApps = [
 const freshApps = allApps.slice(0, 5);
 
 export default function AppsPage() {
-  const [theme, setTheme] = useState<Theme>("light");
-  const [mounted, setMounted] = useState(false);
+  const { isDark, mounted, toggleTheme } = useAppTheme();
 
   const [currentPage, setCurrentPage] = useState(1);
   const [transitionPhase, setTransitionPhase] =
@@ -217,7 +218,6 @@ export default function AppsPage() {
 
   const appsSectionRef = useRef<HTMLElement | null>(null);
 
-  const isDark = theme === "dark";
 
   const totalPages = Math.ceil(allApps.length / APPS_PER_PAGE);
 
@@ -228,22 +228,6 @@ export default function AppsPage() {
   );
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem(
-      "appkhor-theme",
-    ) as Theme | null;
-
-    const systemTheme: Theme = window.matchMedia(
-      "(prefers-color-scheme: dark)",
-    ).matches
-      ? "dark"
-      : "light";
-
-    const initialTheme = savedTheme ?? systemTheme;
-
-    setTheme(initialTheme);
-    document.documentElement.style.colorScheme = initialTheme;
-    setMounted(true);
-
     const params = new URLSearchParams(window.location.search);
     const requestedPage = Number(params.get("page") ?? "1");
 
@@ -274,14 +258,6 @@ export default function AppsPage() {
       window.removeEventListener("popstate", handlePopState);
     };
   }, [totalPages]);
-
-  function toggleTheme() {
-    const newTheme: Theme = isDark ? "light" : "dark";
-
-    setTheme(newTheme);
-    localStorage.setItem("appkhor-theme", newTheme);
-    document.documentElement.style.colorScheme = newTheme;
-  }
 
   function scrollToApps(): Promise<void> {
     return new Promise((resolve) => {
@@ -421,7 +397,7 @@ export default function AppsPage() {
   return (
     <main
       dir="rtl"
-      className={`min-h-screen transition-colors duration-300 ${
+      className={`appkhor-page-enter min-h-screen transition-colors duration-300 ${
         isDark
           ? "bg-[#07120c] text-zinc-100"
           : "bg-[#f7faf7] text-[#17211a]"
@@ -436,7 +412,7 @@ export default function AppsPage() {
         }`}
       >
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 lg:px-8">
-          <a href="/" className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-3">
             <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-700 text-xl font-black text-white shadow-lg shadow-emerald-900/20">
               ا
             </span>
@@ -456,7 +432,7 @@ export default function AppsPage() {
                 اپ‌های مفید، یک‌جا
               </span>
             </div>
-          </a>
+          </Link>
 
           <nav
             className={`hidden items-center gap-8 text-sm font-bold md:flex ${
@@ -465,33 +441,33 @@ export default function AppsPage() {
                 : "text-zinc-600"
             }`}
           >
-            <a
+            <Link
               href="/"
               className="transition hover:text-emerald-500"
             >
               صفحه اصلی
-            </a>
+            </Link>
 
-            <a
+            <Link
               href="/categories"
               className="transition hover:text-emerald-500"
             >
               دسته‌بندی‌ها
-            </a>
+            </Link>
 
-            <a
+            <Link
               href="/apps"
               className="text-emerald-500"
             >
               همه اپ‌ها
-            </a>
+            </Link>
 
-            <a
+            <Link
               href="/#about"
               className="transition hover:text-emerald-500"
             >
               درباره ما
-            </a>
+            </Link>
           </nav>
 
           <div className="flex items-center gap-2">
@@ -526,12 +502,7 @@ export default function AppsPage() {
               حمایت مالی
             </a>
 
-            <a
-              href="/admin"
-              className="rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800"
-            >
-              ورود مدیر
-            </a>
+            <AuthButton />
           </div>
         </div>
       </header>

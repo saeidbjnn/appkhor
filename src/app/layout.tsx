@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
+import type { ReactNode } from "react";
 
 import { DirectionProvider } from "@/components/ui/direction";
+import { AppThemeProvider } from "@/components/app-theme-provider";
 
 import "./globals.css";
 
@@ -24,13 +27,13 @@ const samim = localFont({
       style: "normal",
     },
   ],
-  variable: "--font-sans",
+  variable: "--font-samim",
   display: "swap",
 });
 
 const fontMono = Geist_Mono({
   subsets: ["latin"],
-  variable: "--font-mono",
+  variable: "--font-geist-mono",
 });
 
 export const metadata: Metadata = {
@@ -41,16 +44,48 @@ export const metadata: Metadata = {
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: ReactNode;
 }>) {
   return (
-    <html lang="fa" dir="rtl">
+    <html
+      lang="fa"
+      dir="rtl"
+      suppressHydrationWarning
+    >
       <body
         className={`${samim.className} ${samim.variable} ${fontMono.variable} antialiased`}
       >
-        <DirectionProvider direction="rtl">
-          {children}
-        </DirectionProvider>
+        <AppThemeProvider>
+          <DirectionProvider direction="rtl">
+            {children}
+          </DirectionProvider>
+        </AppThemeProvider>
+
+        <Script
+          id="appkhor-theme-init"
+          strategy="beforeInteractive"
+        >
+          {`
+            (function () {
+              try {
+                var savedTheme = localStorage.getItem("appkhor-theme");
+
+                var theme =
+                  savedTheme === "dark" || savedTheme === "light"
+                    ? savedTheme
+                    : window.matchMedia("(prefers-color-scheme: dark)").matches
+                      ? "dark"
+                      : "light";
+
+                document.documentElement.dataset.theme = theme;
+                document.documentElement.style.colorScheme = theme;
+              } catch (error) {
+                document.documentElement.dataset.theme = "light";
+                document.documentElement.style.colorScheme = "light";
+              }
+            })();
+          `}
+        </Script>
       </body>
     </html>
   );

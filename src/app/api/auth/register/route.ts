@@ -1,10 +1,15 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
+
 import {
+  generateVerificationCode,
   hashPassword,
+  hashVerificationCode,
   isValidEmail,
   normalizeEmail,
   validatePassword,
 } from "@/lib/auth";
+
+import { sendVerificationEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
 
@@ -86,25 +91,107 @@ export async function POST(request: Request) {
     }
 
     const userId = crypto.randomUUID();
+    const identityId = crypto.randomUUID();
+    const credentialId = crypto.randomUUID();
+    const verificationId = crypto.randomUUID();
+
     const passwordHash = await hashPassword(password);
 
-    await env.appkhor_db
-      .prepare(
-        `INSERT INTO users (
-          id,
-          email,
-          password_hash,
-          role,
-          is_active
-        ) VALUES (?, ?, ?, 'user', 1)`,
-      )
-      .bind(userId, email, passwordHash)
-      .run();
+    const verificationCode = generateVerificationCode();
+    const verificationCodeHash =
+      await hashVerificationCode(verificationCode);
+
+    await env.appkhor_db.batch([
+      env.appkhor_db
+        .prepare(
+          `INSERT INTO users (
+            id,
+            email,
+            password_hash,
+            role,
+            is_active,
+            primary_email,
+            account_role,
+            account_status
+          ) VALUES (?, ?, ?, 'user', 1, ?, 'USER', 'ACTIVE')`,
+        )
+        .bind(userId, email, passwordHash, email),
+
+      env.appkhor_db
+        .prepare(
+          `INSERT INTO auth_identities (
+            id,
+            user_id,
+            provider,
+            provider_user_id,
+            provider_email
+          ) VALUES (?, ?, 'EMAIL_PASSWORD', ?, ?)`,
+        )
+        .bind(identityId, userId, email, email),
+
+      env.appkhor_db
+        .prepare(
+          `INSERT INTO password_credentials (
+            id,
+            user_id,
+            password_hash
+          ) VALUES (?, ?, ?)`,
+        )
+        .bind(credentialId, userId, passwordHash),
+
+      env.appkhor_db
+        .prepare(
+          `INSERT INTO email_verification_codes (
+            id,
+            user_id,
+            code_hash,
+            expires_at
+          ) VALUES (?, ?, ?, datetime('now', '+10 minutes'))`,
+        )
+        .bind(
+          verificationId,
+          userId,
+          verificationCodeHash,
+        ),
+    ]);
+
+    const emailEnv = env as typeof env & {
+  RESEND_API_KEY?: string;
+  EMAIL_FROM?: string;
+  APP_URL?: string;
+};
+
+    let verificationEmailSent = false;
+
+    if (emailEnv.RESEND_API_KEY && emailEnv.EMAIL_FROM) {
+      try {
+        await sendVerificationEmail({
+  apiKey: emailEnv.RESEND_API_KEY,
+  from: emailEnv.EMAIL_FROM,
+  to: email,
+code: verificationCode,
+  appUrl: emailEnv.APP_URL,
+});
+
+        verificationEmailSent = true;
+      } catch (error) {
+        console.error(
+          "Verification email send failed:",
+          error,
+        );
+      }
+    } else {
+      console.error("Email configuration is missing.");
+    }
 
     return Response.json(
       {
         success: true,
-        message: "ثبت‌نام با موفقیت انجام شد.",
+        emailVerificationRequired: true,
+        verificationEmailSent,
+        message: verificationEmailSent
+          ? "ثبت‌نام انجام شد. کد تأیید به ایمیل شما ارسال شد."
+          : "ثبت‌نام انجام شد، اما ارسال کد تأیید با مشکل مواجه شد.",
       },
       { status: 201 },
     );

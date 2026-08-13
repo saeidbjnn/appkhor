@@ -15,6 +15,7 @@
 	"dependencies": {
 		"@ant-design/icons": "^6.3.2",
 		"@base-ui/react": "^1.7.0",
+		"@lottiefiles/dotlottie-react": "^0.19.13",
 		"@opennextjs/cloudflare": "^1.19.9",
 		"antd": "^6.5.4",
 		"class-variance-authority": "^0.7.1",

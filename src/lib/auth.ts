@@ -144,3 +144,36 @@ export async function verifyPassword(
 
   return difference === 0;
 }
+
+export function generateVerificationCode(): string {
+  const values = new Uint32Array(1);
+  crypto.getRandomValues(values);
+
+  return (values[0] % 1_000_000).toString().padStart(6, "0");
+}
+
+export async function hashVerificationCode(code: string): Promise<string> {
+  const data = new TextEncoder().encode(code);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+
+  return bytesToBase64(new Uint8Array(digest));
+}
+
+export async function verifyVerificationCode(
+  code: string,
+  storedHash: string,
+): Promise<boolean> {
+  const actualHash = await hashVerificationCode(code);
+
+  if (actualHash.length !== storedHash.length) {
+    return false;
+  }
+
+  let difference = 0;
+
+  for (let index = 0; index < actualHash.length; index += 1) {
+    difference |= actualHash.charCodeAt(index) ^ storedHash.charCodeAt(index);
+  }
+
+  return difference === 0;
+}

@@ -1,12 +1,11 @@
 "use client";
 
-import {
-  type MouseEvent,
-  useEffect,
-  useState,
-} from "react";
+import { type MouseEvent } from "react";
 
-type Theme = "light" | "dark";
+import AuthButton from "@/components/auth/auth-button";
+import { useAppTheme } from "@/components/app-theme-provider";
+import Link from "next/link";
+
 
 const apps = [
   {
@@ -101,36 +100,7 @@ function DownloadIcon() {
 }
 
 export default function Home() {
-  const [theme, setTheme] = useState<Theme>("light");
-  const [mounted, setMounted] = useState(false);
-
-  const isDark = theme === "dark";
-
-  useEffect(() => {
-    const savedTheme = localStorage.getItem(
-      "appkhor-theme",
-    ) as Theme | null;
-
-    const systemTheme: Theme = window.matchMedia(
-      "(prefers-color-scheme: dark)",
-    ).matches
-      ? "dark"
-      : "light";
-
-    const initialTheme = savedTheme ?? systemTheme;
-
-    setTheme(initialTheme);
-    document.documentElement.style.colorScheme = initialTheme;
-    setMounted(true);
-  }, []);
-
-  function toggleTheme() {
-    const newTheme: Theme = isDark ? "light" : "dark";
-
-    setTheme(newTheme);
-    localStorage.setItem("appkhor-theme", newTheme);
-    document.documentElement.style.colorScheme = newTheme;
-  }
+  const { isDark, mounted, toggleTheme } = useAppTheme();
 
   function scrollToSection(sectionId: string) {
     const element = document.getElementById(sectionId);
@@ -170,7 +140,7 @@ export default function Home() {
   return (
     <main
       dir="rtl"
-      className={`min-h-screen transition-colors duration-300 ${
+      className={`appkhor-page-enter min-h-screen transition-colors duration-300 ${
         isDark
           ? "bg-[#07120c] text-zinc-100"
           : "bg-[#f7faf7] text-[#17211a]"
@@ -184,7 +154,7 @@ export default function Home() {
         }`}
       >
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 lg:px-8">
-          <a href="/" className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-3">
             <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-700 text-xl font-black text-white shadow-lg shadow-emerald-900/20">
               ا
             </span>
@@ -204,7 +174,7 @@ export default function Home() {
                 اپ‌های مفید، یک‌جا
               </span>
             </div>
-          </a>
+          </Link>
 
           <nav
             className={`hidden items-center gap-8 text-sm font-bold md:flex ${
@@ -213,26 +183,26 @@ export default function Home() {
                 : "text-zinc-600"
             }`}
           >
-            <a
+            <Link
               href="/"
               className="text-emerald-500"
             >
               صفحه اصلی
-            </a>
+            </Link>
 
-            <a
-  href="/categories"
-  className="transition hover:text-emerald-500"
->
-  دسته‌بندی‌ها
-</a>
+            <Link
+              href="/categories"
+              className="transition hover:text-emerald-500"
+            >
+              دسته‌بندی‌ها
+            </Link>
 
-<a
-  href="/apps"
-  className="transition hover:text-emerald-500"
->
-  همه اپ‌ها
-</a>
+            <Link
+              href="/apps"
+              className="transition hover:text-emerald-500"
+            >
+              همه اپ‌ها
+            </Link>
 
             <a
               href="#about"
@@ -281,12 +251,7 @@ export default function Home() {
               حمایت مالی
             </a>
 
-            <a
-              href="/admin"
-              className="rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800"
-            >
-              ورود مدیر
-            </a>
+            <AuthButton />
           </div>
         </div>
       </header>
@@ -509,16 +474,13 @@ export default function Home() {
             </h2>
           </div>
 
-          <a
-            href="#apps"
-            onClick={(event) =>
-              handleSectionClick(event, "apps")
-            }
+          <Link
+            href="/categories"
             className="inline-flex items-center gap-2 text-sm font-bold text-emerald-600"
           >
             مشاهده همه دسته‌ها
             <ArrowIcon />
-          </a>
+          </Link>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -589,13 +551,13 @@ export default function Home() {
               </h2>
             </div>
 
-            <a
+            <Link
               href="/apps"
               className="inline-flex items-center gap-2 text-sm font-bold text-emerald-600"
             >
               مشاهده همه اپ‌ها
               <ArrowIcon />
-            </a>
+            </Link>
           </div>
 
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
@@ -801,12 +763,12 @@ export default function Home() {
             </strong>
 
             <div className="mt-4 flex flex-col gap-3 text-sm text-zinc-500">
-              <a
+              <Link
                 href="/"
                 className="hover:text-emerald-600"
               >
                 صفحه اصلی
-              </a>
+              </Link>
 
               <a
                 href="#apps"
@@ -822,7 +784,7 @@ export default function Home() {
               </a>
 
               <a
-                href="categories"
+                href="#categories"
                 onClick={(event) =>
                   handleSectionClick(
                     event,
@@ -842,12 +804,7 @@ export default function Home() {
             </strong>
 
             <div className="mt-4 flex flex-col gap-3 text-sm text-zinc-500">
-              <a
-                href="/admin"
-                className="hover:text-emerald-600"
-              >
-                ورود مدیر
-              </a>
+              <AuthButton />
 
               <a
                 href="https://reymit.ir/saeid_bjn"

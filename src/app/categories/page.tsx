@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
-type Theme = "light" | "dark";
+import Link from "next/link";
+import AuthButton from "@/components/auth/auth-button";
+import { useAppTheme } from "@/components/app-theme-provider";
 
 type AppCard = {
   name: string;
@@ -299,32 +299,12 @@ const categories: Category[] = [
 ];
 
 export default function CategoriesPage() {
-  const [theme, setTheme] = useState<Theme>("light");
-  const [mounted, setMounted] = useState(false);
-
-  const isDark = theme === "dark";
-
-  useEffect(() => {
-    const savedTheme = window.localStorage.getItem("appkhor-theme");
-
-    if (savedTheme === "dark" || savedTheme === "light") {
-      setTheme(savedTheme);
-    }
-
-    setMounted(true);
-  }, []);
-
-  function toggleTheme() {
-    const nextTheme: Theme = isDark ? "light" : "dark";
-
-    setTheme(nextTheme);
-    window.localStorage.setItem("appkhor-theme", nextTheme);
-  }
+  const { isDark, mounted, toggleTheme } = useAppTheme();
 
   return (
     <main
       dir="rtl"
-      className={`min-h-screen transition-colors duration-300 ${
+      className={`appkhor-page-enter min-h-screen transition-colors duration-300 ${
         isDark
           ? "bg-[#07120c] text-zinc-100"
           : "bg-[#f7faf7] text-[#17211a]"
@@ -339,7 +319,7 @@ export default function CategoriesPage() {
         }`}
       >
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 lg:px-8">
-          <a href="/" className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-3">
             <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-700 text-xl font-black text-white shadow-lg shadow-emerald-900/20">
               ا
             </span>
@@ -357,37 +337,37 @@ export default function CategoriesPage() {
                 اپ‌های مفید، یک‌جا
               </span>
             </div>
-          </a>
+          </Link>
 
           <nav
             className={`hidden items-center gap-8 text-sm font-bold md:flex ${
               isDark ? "text-zinc-300" : "text-zinc-600"
             }`}
           >
-            <a
+            <Link
               href="/"
               className="transition hover:text-emerald-500"
             >
               صفحه اصلی
-            </a>
+            </Link>
 
-            <a href="/categories" className="text-emerald-500">
+            <Link href="/categories" className="text-emerald-500">
               دسته‌بندی‌ها
-            </a>
+            </Link>
 
-            <a
+            <Link
               href="/apps"
               className="transition hover:text-emerald-500"
             >
               همه اپ‌ها
-            </a>
+            </Link>
 
-            <a
+            <Link
               href="/#about"
               className="transition hover:text-emerald-500"
             >
               درباره ما
-            </a>
+            </Link>
           </nav>
 
           <div className="flex items-center gap-2">
@@ -418,12 +398,7 @@ export default function CategoriesPage() {
               حمایت مالی
             </a>
 
-            <a
-              href="/admin"
-              className="rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800"
-            >
-              ورود مدیر
-            </a>
+            <AuthButton />
           </div>
         </div>
       </header>
@@ -638,7 +613,7 @@ export default function CategoriesPage() {
                 ))}
 
                 {/* کارت پنجم: مشاهده اپ‌های بیشتر این دسته */}
-                <a
+                <Link
                   href={`/categories/${category.slug}`}
                   className={`group flex min-h-[285px] flex-col items-center justify-center rounded-3xl border-2 border-dashed p-6 text-center transition duration-200 hover:-translate-y-1 ${
                     isDark
@@ -677,7 +652,7 @@ export default function CategoriesPage() {
                   >
                     مشاهده همه ←
                   </span>
-                </a>
+                </Link>
               </div>
             </div>
 

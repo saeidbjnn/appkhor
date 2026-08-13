@@ -1,66 +1,95 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import {
+  createContext,
+  type ReactNode,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 
-type Theme = "light" | "dark";
+export type Theme = "light" | "dark";
 
-export default function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>("light");
-  const [mounted, setMounted] = useState(false);
+type ThemeContextValue = {
+  theme: Theme;
+  isDark: boolean;
+  mounted: boolean;
+  toggleTheme: () => void;
+};
 
-  useEffect(() => {
-    const savedTheme = localStorage.getItem("appkhor-theme") as Theme | null;
+const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-    const systemTheme: Theme = window.matchMedia(
-      "(prefers-color-scheme: dark)",
-    ).matches
-      ? "dark"
-      : "light";
+function getInitialTheme(): Theme {
+  if (typeof document !== "undefined") {
+    const htmlTheme = document.documentElement.dataset.theme;
 
-    const initialTheme = savedTheme ?? systemTheme;
-
-    setTheme(initialTheme);
-    document.documentElement.classList.toggle(
-      "dark",
-      initialTheme === "dark",
-    );
-
-    setMounted(true);
-  }, []);
-
-  function toggleTheme() {
-    const newTheme: Theme = theme === "dark" ? "light" : "dark";
-
-    setTheme(newTheme);
-    localStorage.setItem("appkhor-theme", newTheme);
-
-    document.documentElement.classList.toggle(
-      "dark",
-      newTheme === "dark",
-    );
+    if (htmlTheme === "light" || htmlTheme === "dark") {
+      return htmlTheme;
+    }
   }
 
-  if (!mounted) {
-    return (
-      <button
-        type="button"
-        aria-label="تغییر حالت نمایش"
-        className="h-10 w-10 rounded-xl border border-zinc-200 bg-white"
-      />
+  if (typeof window !== "undefined") {
+    const savedTheme = localStorage.getItem("appkhor-theme");
+
+    if (savedTheme === "light" || savedTheme === "dark") {
+      return savedTheme;
+    }
+
+    return window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+  }
+
+  return "light";
+}
+
+export function AppThemeProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const [theme, setTheme] = useState<Theme>(getInitialTheme);
+  const [mounted, setMounted] = useState(false);
+
+  const isDark = theme === "dark";
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.style.colorScheme = theme;
+
+    localStorage.setItem("appkhor-theme", theme);
+
+    setMounted(true);
+  }, [theme]);
+
+  function toggleTheme() {
+    setTheme((currentTheme) =>
+      currentTheme === "dark" ? "light" : "dark",
     );
   }
 
   return (
-    <button
-      type="button"
-      onClick={toggleTheme}
-      aria-label={
-        theme === "dark" ? "فعال‌کردن حالت روشن" : "فعال‌کردن حالت شب"
-      }
-      title={theme === "dark" ? "حالت روشن" : "حالت شب"}
-      className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-lg transition hover:border-emerald-300 hover:bg-emerald-50"
+    <ThemeContext.Provider
+      value={{
+        theme,
+        isDark,
+        mounted,
+        toggleTheme,
+      }}
     >
-      {theme === "dark" ? "☀️" : "🌙"}
-    </button>
+      {children}
+    </ThemeContext.Provider>
   );
+}
+
+export function useAppTheme() {
+  const context = useContext(ThemeContext);
+
+  if (!context) {
+    throw new Error(
+      "useAppTheme باید داخل AppThemeProvider استفاده شود.",
+    );
+  }
+
+  return context;
 }
