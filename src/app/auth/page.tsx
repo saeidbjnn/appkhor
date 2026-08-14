@@ -31,14 +31,15 @@ export default function AuthPage() {
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isEntering, setIsEntering] = useState(false);
-const passwordChecks = {
+  const passwordChecks = {
   minLength: password.length >= 8,
   maxLength: password.length <= 128,
   lowercase: /[a-z]/.test(password),
   uppercase: /[A-Z]/.test(password),
   number: /[0-9]/.test(password),
   symbol: /[^a-zA-Z0-9]/.test(password),
-};
+  };
+
   const handleSubmit = async (
     event: SyntheticEvent<HTMLFormElement>,
   ) => {
@@ -68,13 +69,7 @@ const passwordChecks = {
         setSuccess(data.success);
 
         if (data.success) {
-  setIsEntering(true);
-
-  window.setTimeout(() => {
-    router.push("/");
-    router.refresh();
-  }, 1500);
-
+  router.push("/auth/enter");
   return;
 }
 
@@ -158,7 +153,7 @@ const passwordChecks = {
   return (
     <main
       dir="rtl"
-      className="relative min-h-screen overflow-hidden bg-[#082f23] px-4 py-8 text-zinc-900"
+      className="relative h-dvh overflow-hidden bg-[#082f23] px-4 py-4 text-zinc-900"
     >
       {/* حباب‌های متحرک پس‌زمینه */}
       <div className="appkhor-bubble pointer-events-none absolute -left-16 top-14 h-44 w-44 rounded-full border border-emerald-100/15 bg-emerald-200/[0.035] shadow-[inset_0_0_55px_rgba(167,243,208,0.06)]" />
@@ -175,10 +170,10 @@ const passwordChecks = {
 
       <div className="pointer-events-none absolute -bottom-40 -left-32 h-[30rem] w-[30rem] rounded-full bg-emerald-300/[0.04] blur-3xl" />
 
-      <div className="relative z-10 mx-auto flex min-h-[calc(100vh-4rem)] max-w-6xl items-center justify-center">
-        <div className="grid w-full max-w-5xl overflow-hidden rounded-[2rem] border border-white/10 shadow-[0_30px_90px_-35px_rgba(0,0,0,0.38)] lg:h-[740px] lg:grid-cols-2">
+      <div className="relative z-10 mx-auto flex h-full max-w-6xl items-center justify-center">
+        <div className="grid h-full max-h-[720px] w-full max-w-5xl overflow-hidden rounded-[2rem] border border-white/10 shadow-[0_30px_90px_-35px_rgba(0,0,0,0.38)] lg:grid-cols-2">
           {/* بخش معرفی + شفق */}
-          <section className="relative hidden min-h-[690px] overflow-hidden bg-[#e2ece4] p-12 text-[#173522] lg:flex lg:flex-col lg:justify-between">
+          <section className="relative hidden h-full min-h-0 overflow-hidden bg-[#e2ece4] p-10 text-[#173522] lg:flex lg:flex-col lg:justify-between">
             {/* شفق لایه‌ای */}
             <div className="pointer-events-none absolute inset-0 overflow-hidden">
   {/* فیلتر موج طبیعی شفق */}
@@ -368,7 +363,7 @@ const passwordChecks = {
                 </div>
               </Link>
 
-              <div className="mt-16 max-w-md">
+              <div className="mt-10 max-w-md">
                 <h1 className="text-4xl font-black leading-[1.5]">
                   حساب اپ‌خور،
                   <br />
@@ -380,12 +375,12 @@ const passwordChecks = {
                   فعالیت‌های خودت را مدیریت کن.
                 </p>
                 {mode === "register" && (
-  <div className="mt-8 rounded-2xl border border-emerald-900/10 bg-white/45 p-5 backdrop-blur-sm">
-    <p className="mb-4 text-sm font-black text-emerald-950">
+  <div className="mt-6 rounded-2xl border border-emerald-900/10 bg-white/45 p-4 backdrop-blur-sm">
+    <p className="mb-3 text-sm font-black text-emerald-950">
       رمز عبور باید این شرایط را داشته باشد:
     </p>
 
-    <div className="space-y-3 text-sm font-medium">
+    <div className="space-y-2.5 text-sm font-medium">
       {[
         ["بین ۸ تا ۱۲۸ کاراکتر", passwordChecks.minLength && passwordChecks.maxLength],
         ["حداقل یک حرف کوچک انگلیسی", passwordChecks.lowercase],
@@ -424,38 +419,38 @@ const passwordChecks = {
           </section>
 
           {/* بخش فرم */}
-          <section className="relative overflow-y-auto overflow-x-hidden bg-[#b7d4c0] p-6 sm:p-10 lg:p-12">
+          <section className="relative h-full min-h-0 overflow-hidden bg-[#b7d4c0] p-5 sm:p-7 lg:p-8">
             <div className="pointer-events-none absolute -left-20 -top-20 h-56 w-56 rounded-full bg-emerald-800/[0.045]" />
 
             <div className="pointer-events-none absolute -bottom-24 -right-20 h-64 w-64 rounded-full border-[38px] border-emerald-900/[0.04]" />
 
-            <div className="relative z-10 mx-auto max-w-md">
+            <div className="relative z-10 mx-auto flex h-full max-w-md flex-col justify-center">
               <Link
                 href="/"
-                className="mb-10 inline-flex items-center gap-2 text-sm font-bold text-zinc-700 transition hover:text-emerald-800 lg:hidden"
+                className="mb-5 inline-flex items-center gap-2 text-sm font-bold text-zinc-700 transition hover:text-emerald-800 lg:hidden"
               >
                 بازگشت به اپ‌خور
               </Link>
 
-              <div className="mb-8">
+              <div className="mb-5">
                 <h2 className="text-3xl font-black text-[#17211a]">
                   {mode === "login"
                     ? "ورود به اپ‌خور"
                     : "ساخت حساب کاربری"}
                 </h2>
 
-                <p className="mt-3 text-sm font-medium leading-7 text-zinc-700">
+                <p className="mt-2 text-sm font-medium leading-6 text-zinc-700">
                   {mode === "login"
                     ? "برای ادامه وارد حساب کاربری خودت شو."
                     : "در چند لحظه حساب اپ‌خور خودت را بساز."}
                 </p>
               </div>
 
-              <div className="mb-7 grid grid-cols-2 rounded-2xl bg-white/45 p-1">
+              <div className="mb-4 grid grid-cols-2 rounded-2xl bg-white/45 p-1">
                 <button
                   type="button"
                   onClick={() => changeMode("login")}
-                  className={`rounded-xl px-4 py-3 text-sm font-bold transition ${
+                  className={`rounded-xl px-4 py-2.5 text-sm font-bold transition ${
                     mode === "login"
                       ? "bg-white/90 text-emerald-800 shadow-sm"
                       : "text-zinc-700 hover:bg-white/30"
@@ -467,7 +462,7 @@ const passwordChecks = {
                 <button
                   type="button"
                   onClick={() => changeMode("register")}
-                  className={`rounded-xl px-4 py-3 text-sm font-bold transition ${
+                  className={`rounded-xl px-4 py-2.5 text-sm font-bold transition ${
                     mode === "register"
                       ? "bg-white/90 text-emerald-800 shadow-sm"
                       : "text-zinc-700 hover:bg-white/30"
@@ -478,24 +473,23 @@ const passwordChecks = {
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  disabled
-                  className="flex h-12 items-center justify-center gap-2 rounded-xl border border-emerald-900/10 bg-white/55 text-sm font-bold text-zinc-600 opacity-80"
-                >
-                  Google
-                </button>
+                <a
+  href="/api/auth/google"
+  className="flex h-11 items-center justify-center gap-2 rounded-xl border border-emerald-900/10 bg-white/55 text-sm font-bold text-zinc-700 transition hover:border-emerald-700/30 hover:bg-white/75 hover:text-emerald-800"
+>
+  Google
+</a>
 
                 <button
                   type="button"
                   disabled
-                  className="flex h-12 items-center justify-center gap-2 rounded-xl border border-emerald-900/10 bg-white/55 text-sm font-bold text-zinc-600 opacity-80"
+                  className="flex h-11 items-center justify-center gap-2 rounded-xl border border-emerald-900/10 bg-white/55 text-sm font-bold text-zinc-600 opacity-80"
                 >
                   GitHub
                 </button>
               </div>
 
-              <div className="my-7 flex items-center gap-4">
+              <div className="my-4 flex items-center gap-4">
                 <div className="h-px flex-1 bg-emerald-900/10" />
 
                 <span className="text-xs font-medium text-zinc-600">
@@ -508,10 +502,10 @@ const passwordChecks = {
 <form
   key={mode}
   onSubmit={handleSubmit}
-  className="appkhor-auth-enter space-y-5"
+  className="appkhor-auth-enter space-y-3.5"
 >
                 <div>
-                  <label className="mb-2 block text-sm font-bold">
+                  <label className="mb-1.5 block text-sm font-bold">
                     ایمیل
                   </label>
 
@@ -525,12 +519,12 @@ const passwordChecks = {
                     }
                     placeholder="name@example.com"
                     required
-                    className="h-[52px] w-full rounded-xl border border-emerald-900/10 bg-[#e7f0e9]/85 px-4 text-left text-zinc-900 outline-none transition placeholder:text-zinc-500 focus:border-emerald-600 focus:bg-[#f1f6f2] focus:ring-4 focus:ring-emerald-700/10"
+                    className="h-12 w-full rounded-xl border border-emerald-900/10 bg-[#e7f0e9]/85 px-4 text-left text-zinc-900 outline-none transition placeholder:text-zinc-500 focus:border-emerald-600 focus:bg-[#f1f6f2] focus:ring-4 focus:ring-emerald-700/10"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-bold">
+                  <label className="mb-1.5 block text-sm font-bold">
                     رمز عبور
                   </label>
 
@@ -548,7 +542,7 @@ const passwordChecks = {
                         setPassword(event.target.value)
                       }
                       required
-                      className="h-[52px] w-full rounded-xl border border-emerald-900/10 bg-[#e7f0e9]/85 px-4 pl-14 text-left text-zinc-900 outline-none transition focus:border-emerald-600 focus:bg-[#f1f6f2] focus:ring-4 focus:ring-emerald-700/10"
+                      className="h-12 w-full rounded-xl border border-emerald-900/10 bg-[#e7f0e9]/85 px-4 pl-14 text-left text-zinc-900 outline-none transition focus:border-emerald-600 focus:bg-[#f1f6f2] focus:ring-4 focus:ring-emerald-700/10"
                     />
 
                     <button
@@ -563,53 +557,55 @@ const passwordChecks = {
                   </div>
                 </div>
 
-                {mode === "register" && (
-                  <div>
-                    <label className="mb-2 block text-sm font-bold">
-                      تکرار رمز عبور
-                    </label>
+                <div className="min-h-[72px]">
+                  {mode === "register" ? (
+                    <div>
+                      <label className="mb-1.5 block text-sm font-bold">
+                        تکرار رمز عبور
+                      </label>
 
-                    <input
-                      type="password"
-                      dir="ltr"
-                      autoComplete="new-password"
-                      value={confirmPassword}
-                      onChange={(event) =>
-                        setConfirmPassword(event.target.value)
-                      }
-                      required
-                      className="h-[52px] w-full rounded-xl border border-emerald-900/10 bg-[#e7f0e9]/85 px-4 text-left text-zinc-900 outline-none transition focus:border-emerald-600 focus:bg-[#f1f6f2] focus:ring-4 focus:ring-emerald-700/10"
-                    />
-                  </div>
-                )}
+                      <input
+                        type="password"
+                        dir="ltr"
+                        autoComplete="new-password"
+                        value={confirmPassword}
+                        onChange={(event) =>
+                          setConfirmPassword(event.target.value)
+                        }
+                        required
+                        className="h-12 w-full rounded-xl border border-emerald-900/10 bg-[#e7f0e9]/85 px-4 text-left text-zinc-900 outline-none transition focus:border-emerald-600 focus:bg-[#f1f6f2] focus:ring-4 focus:ring-emerald-700/10"
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex h-[72px] items-end justify-end pb-1">
+                      <Link
+                        href="/auth/forgot-password"
+                        className="text-sm font-bold text-emerald-800 transition hover:text-emerald-950"
+                      >
+                        رمز عبور را فراموش کردم
+                      </Link>
+                    </div>
+                  )}
+                </div>
 
-                {mode === "login" && (
-                  <div className="flex justify-end">
-                    <Link
-                      href="/auth/forgot-password"
-                      className="text-sm font-bold text-emerald-800 transition hover:text-emerald-950"
+                <div className="min-h-[44px]">
+                  {message && (
+                    <div
+                      className={`rounded-xl px-4 py-2.5 text-sm leading-6 ${
+                        success
+                          ? "bg-emerald-50/90 text-emerald-800"
+                          : "bg-red-50/90 text-red-700"
+                      }`}
                     >
-                      رمز عبور را فراموش کردم
-                    </Link>
-                  </div>
-                )}
-
-                {message && (
-                  <div
-                    className={`rounded-xl px-4 py-3 text-sm leading-7 ${
-                      success
-                        ? "bg-emerald-50/90 text-emerald-800"
-                        : "bg-red-50/90 text-red-700"
-                    }`}
-                  >
-                    {message}
-                  </div>
-                )}
+                      {message}
+                    </div>
+                  )}
+                </div>
 
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="flex h-[52px] w-full items-center justify-center rounded-xl bg-[#0f6b4f] px-5 font-black text-white shadow-[0_10px_25px_-12px_rgba(15,107,79,0.65)] transition hover:bg-[#0b5b43] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="flex h-12 w-full items-center justify-center rounded-xl bg-[#0f6b4f] px-5 font-black text-white shadow-[0_10px_25px_-12px_rgba(15,107,79,0.65)] transition hover:bg-[#0b5b43] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isLoading
                     ? "لطفاً صبر کنید..."
@@ -619,7 +615,7 @@ const passwordChecks = {
                 </button>
               </form>
 
-              <p className="mt-7 text-center text-xs font-medium leading-6 text-zinc-600">
+              <p className="mt-4 text-center text-xs font-medium leading-5 text-zinc-600">
                 با ادامه، قوانین استفاده و حریم خصوصی اپ‌خور را
                 می‌پذیرید.
               </p>

@@ -1,5 +1,6 @@
 "use client";
 
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -32,7 +33,7 @@ export default function VerifyEmailPage() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
-
+const [isEntering, setIsEntering] = useState(false);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const emailFromUrl = params.get("email");
@@ -82,11 +83,10 @@ export default function VerifyEmailPage() {
       if (data.success && data.verified) {
   setCode("");
 
-  if (data.authenticated) {
-    router.push("/");
-    router.refresh();
-    return;
-  }
+if (data.authenticated) {
+  router.push("/auth/enter");
+  return;
+}
 
   setVerified(true);
 }
@@ -302,6 +302,22 @@ export default function VerifyEmailPage() {
           بازگشت به ورود
         </Link>
       </section>
+      {isEntering && (
+  <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-[#03110c]/88 backdrop-blur-[9px]">
+    <div className="flex flex-col items-center">
+      <DotLottieReact
+        src="/animations/login-loading.lottie"
+        autoplay
+        loop
+        className="h-33 w-33"
+      />
+
+      <p className="-mt-2 text-sm font-black text-emerald-50">
+        در حال ورود...
+      </p>
+    </div>
+  </div>
+)}
     </main>
   );
 }
