@@ -1,8 +1,11 @@
+
 "use client";
 
 import Link from "next/link";
 import AuthButton from "@/components/auth/auth-button";
 import { useAppTheme } from "@/components/app-theme-provider";
+import { motion, useReducedMotion } from "motion/react";
+import { Reveal, Stagger, StaggerItem } from "@/components/motion/reveal";
 
 type AppCard = {
   name: string;
@@ -300,18 +303,22 @@ const categories: Category[] = [
 
 export default function CategoriesPage() {
   const { isDark, mounted, toggleTheme } = useAppTheme();
+  const reduceMotion = useReducedMotion();
 
   return (
     <main
       dir="rtl"
-      className={`appkhor-page-enter min-h-screen transition-colors duration-300 ${
+      className={`min-h-screen transition-colors duration-300 ${
         isDark
           ? "bg-[#07120c] text-zinc-100"
           : "bg-[#f7faf7] text-[#17211a]"
       }`}
     >
       {/* Header */}
-      <header
+      <motion.header
+        initial={reduceMotion ? false : { opacity: 0, y: -14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
         className={`sticky top-0 z-50 border-b backdrop-blur-xl transition-colors ${
           isDark
             ? "border-white/10 bg-[#07120c]/90"
@@ -371,9 +378,12 @@ export default function CategoriesPage() {
           </nav>
 
           <div className="flex items-center gap-2">
-            <button
+            <motion.button
               type="button"
               onClick={toggleTheme}
+              whileHover={reduceMotion ? undefined : { y: -2, rotate: -5, scale: 1.04 }}
+              whileTap={reduceMotion ? undefined : { scale: 0.92 }}
+              transition={{ type: "spring", stiffness: 420, damping: 22 }}
               aria-label="تغییر حالت نمایش"
               title={isDark ? "حالت روشن" : "حالت شب"}
               className={`flex h-11 w-11 items-center justify-center rounded-xl border text-lg transition ${
@@ -383,9 +393,12 @@ export default function CategoriesPage() {
               }`}
             >
               {mounted ? (isDark ? "☀️" : "🌙") : "🌙"}
-            </button>
+            </motion.button>
 
-            <a
+            <motion.a
+              whileHover={reduceMotion ? undefined : { y: -2, scale: 1.02 }}
+              whileTap={reduceMotion ? undefined : { scale: 0.97 }}
+              transition={{ type: "spring", stiffness: 380, damping: 24 }}
               href="https://reymit.ir/saeid_bjn"
               target="_blank"
               rel="noopener noreferrer"
@@ -396,12 +409,12 @@ export default function CategoriesPage() {
               }`}
             >
               حمایت مالی
-            </a>
+            </motion.a>
 
             <AuthButton />
           </div>
         </div>
-      </header>
+      </motion.header>
 
       {/* Page Title */}
       <section
@@ -420,7 +433,25 @@ export default function CategoriesPage() {
           }}
         />
 
-        <div
+        <motion.div
+          aria-hidden="true"
+          animate={
+            reduceMotion
+              ? undefined
+              : {
+                  scale: [1, 1.06, 1],
+                  opacity: [0.8, 1, 0.8],
+                }
+          }
+          transition={
+            reduceMotion
+              ? undefined
+              : {
+                  duration: 6,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }
+          }
           className="pointer-events-none absolute left-1/2 top-1/2 h-[420px] w-[720px] -translate-x-1/2 -translate-y-1/2 rounded-[50%] blur-3xl"
           style={{
             background: isDark
@@ -468,7 +499,7 @@ export default function CategoriesPage() {
           }}
         />
 
-        <div className="relative z-10 mx-auto max-w-7xl px-5 py-20 text-center lg:px-8 lg:py-24">
+        <Reveal className="relative z-10 mx-auto max-w-7xl px-5 py-20 text-center lg:px-8 lg:py-24">
           <span
             className={`text-sm font-bold ${
               isDark ? "text-emerald-400" : "text-emerald-800"
@@ -492,7 +523,7 @@ export default function CategoriesPage() {
           >
             اپ‌ها رو بر اساس موضوع پیدا کن و سریع‌تر به ابزار موردنیازت برس.
           </p>
-        </div>
+        </Reveal>
       </section>
 
       {/* Categories */}
@@ -543,7 +574,7 @@ export default function CategoriesPage() {
             />
 
             <div className="relative z-10 mx-auto max-w-7xl px-5 pb-28 pt-16 lg:px-8">
-              <div className="mb-8 flex flex-col gap-2">
+              <Reveal className="mb-8 flex flex-col gap-2">
                 <span
                   className={`text-sm font-bold ${
                     isDark
@@ -565,13 +596,28 @@ export default function CategoriesPage() {
                 >
                   {category.subtitle}
                 </p>
-              </div>
+              </Reveal>
 
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+              <Stagger className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                 {category.apps.map((app) => (
-                  <article
-                    key={app.name}
-                    className={`group flex min-h-[285px] flex-col rounded-3xl border p-5 transition duration-200 hover:-translate-y-1 ${
+                  <StaggerItem key={app.name}>
+                  <motion.article
+                    whileHover={
+                      reduceMotion
+                        ? undefined
+                        : {
+                            y: -8,
+                            scale: 1.015,
+                            rotateX: 1.2,
+                            rotateY: -1.2,
+                          }
+                    }
+                    transition={{
+                      type: "spring",
+                      stiffness: 300,
+                      damping: 24,
+                    }}
+                    className={`group flex min-h-[285px] flex-col rounded-3xl border p-5 transition duration-200 ${
                       isDark
                         ? category.theme.cardDark
                         : category.theme.cardLight
@@ -599,8 +645,15 @@ export default function CategoriesPage() {
                       {app.description}
                     </p>
 
-                    <button
+                    <motion.button
                       type="button"
+                      whileHover={reduceMotion ? undefined : { y: -2, scale: 1.015 }}
+                      whileTap={reduceMotion ? undefined : { scale: 0.96 }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 420,
+                        damping: 24,
+                      }}
                       className={`mt-5 w-full rounded-xl border px-4 py-3 text-sm font-bold transition ${
                         isDark
                           ? category.theme.buttonDark
@@ -608,11 +661,22 @@ export default function CategoriesPage() {
                       }`}
                     >
                       مشاهده اپ
-                    </button>
-                  </article>
+                    </motion.button>
+                  </motion.article>
+                  </StaggerItem>
                 ))}
 
                 {/* کارت پنجم: مشاهده اپ‌های بیشتر این دسته */}
+                <StaggerItem>
+                <motion.div
+                  whileHover={reduceMotion ? undefined : { y: -8, scale: 1.015 }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 300,
+                    damping: 24,
+                  }}
+                  className="h-full"
+                >
                 <Link
                   href={`/categories/${category.slug}`}
                   className={`group flex min-h-[285px] flex-col items-center justify-center rounded-3xl border-2 border-dashed p-6 text-center transition duration-200 hover:-translate-y-1 ${
@@ -621,15 +685,17 @@ export default function CategoriesPage() {
                       : category.theme.moreLight
                   }`}
                 >
-                  <span
-                    className={`flex h-16 w-16 items-center justify-center rounded-full text-3xl font-light transition group-hover:scale-110 ${
+                  <motion.span
+                    whileHover={reduceMotion ? undefined : { rotate: 90, scale: 1.12 }}
+                    transition={{ type: "spring", stiffness: 360, damping: 20 }}
+                    className={`flex h-16 w-16 items-center justify-center rounded-full text-3xl font-light transition ${
                       isDark
                         ? category.theme.moreIconDark
                         : category.theme.moreIconLight
                     }`}
                   >
                     +
-                  </span>
+                  </motion.span>
 
                   <h3 className="mt-5 text-lg font-black">
                     اپ‌های بیشتر
@@ -653,7 +719,9 @@ export default function CategoriesPage() {
                     مشاهده همه ←
                   </span>
                 </Link>
-              </div>
+                </motion.div>
+                </StaggerItem>
+              </Stagger>
             </div>
 
             {/* گذار نرم به رنگ دسته بعدی؛ بدون خط جداکننده */}

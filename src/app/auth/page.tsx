@@ -1,9 +1,13 @@
+
+
+
 "use client";
 
 import Link from "next/link";
 import { type SyntheticEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+import { motion } from "motion/react";
 
 type AuthMode = "login" | "register";
 
@@ -473,20 +477,101 @@ export default function AuthPage() {
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <a
-  href="/api/auth/google"
-  className="flex h-11 items-center justify-center gap-2 rounded-xl border border-emerald-900/10 bg-white/55 text-sm font-bold text-zinc-700 transition hover:border-emerald-700/30 hover:bg-white/75 hover:text-emerald-800"
->
-  Google
-</a>
-
-                <button
-                  type="button"
-                  disabled
-                  className="flex h-11 items-center justify-center gap-2 rounded-xl border border-emerald-900/10 bg-white/55 text-sm font-bold text-zinc-600 opacity-80"
+                <motion.a
+                  href="/api/auth/google"
+                  aria-label="ورود با Google"
+                  whileHover={{ y: -2, scale: 1.015 }}
+                  whileTap={{ scale: 0.97 }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 420,
+                    damping: 24,
+                  }}
+                  className="group relative flex h-11 items-center justify-center overflow-hidden rounded-xl border border-emerald-900/10 bg-white/55 text-sm font-bold text-zinc-700 shadow-sm outline-none transition-[border-color,box-shadow,color] duration-300 hover:border-transparent hover:text-white hover:shadow-[0_12px_30px_-12px_rgba(66,133,244,0.6)] focus-visible:ring-4 focus-visible:ring-white/45"
                 >
-                  GitHub
-                </button>
+                  <span
+                    aria-hidden="true"
+                    className="absolute inset-0 scale-110 bg-[linear-gradient(115deg,#4285F4_0%,#4285F4_24%,#34A853_42%,#FBBC05_68%,#EA4335_100%)] opacity-0 transition-all duration-300 ease-out group-hover:scale-100 group-hover:opacity-100"
+                  />
+
+                  <span
+                    aria-hidden="true"
+                    className="absolute inset-0 bg-[radial-gradient(circle_at_30%_0%,rgba(255,255,255,0.34),transparent_46%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                  />
+
+                  <span className="relative z-10 flex items-center justify-center gap-2.5">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full transition-all duration-300 group-hover:bg-white group-hover:shadow-[0_4px_12px_rgba(0,0,0,0.16)]">
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 18 18"
+                        aria-hidden="true"
+                        className="transition-transform duration-300 group-hover:scale-105"
+                      >
+                        <path
+                          fill="#4285F4"
+                          d="M17.64 9.205c0-.638-.057-1.252-.164-1.841H9v3.482h4.844a4.14 4.14 0 0 1-1.797 2.715v2.258h2.909c1.702-1.567 2.684-3.877 2.684-6.614Z"
+                        />
+                        <path
+                          fill="#34A853"
+                          d="M9 18c2.43 0 4.467-.806 5.956-2.181l-2.909-2.258c-.806.54-1.836.859-3.047.859-2.344 0-4.328-1.585-5.037-3.714H.956v2.332A9 9 0 0 0 9 18Z"
+                        />
+                        <path
+                          fill="#FBBC05"
+                          d="M3.963 10.706A5.41 5.41 0 0 1 3.682 9c0-.592.102-1.166.281-1.706V4.962H.956A9 9 0 0 0 0 9c0 1.452.347 2.827.956 4.038l3.007-2.332Z"
+                        />
+                        <path
+                          fill="#EA4335"
+                          d="M9 3.58c1.321 0 2.507.454 3.441 1.346l2.581-2.58C13.463.892 11.426 0 9 0A9 9 0 0 0 .956 4.962l3.007 2.332C4.672 5.165 6.656 3.58 9 3.58Z"
+                        />
+                      </svg>
+                    </span>
+
+                    <span className="transition-all duration-300 group-hover:tracking-[0.02em]">
+                      Google
+                    </span>
+                  </span>
+                </motion.a>
+
+                <motion.a
+                  href="/api/auth/github"
+                  aria-label="ورود با GitHub"
+                  whileHover={{ y: -2, scale: 1.015 }}
+                  whileTap={{ scale: 0.97 }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 420,
+                    damping: 24,
+                  }}
+                  className="group relative flex h-11 items-center justify-center overflow-hidden rounded-xl border border-emerald-900/10 bg-white/55 text-sm font-bold text-zinc-700 shadow-sm outline-none transition-[border-color,box-shadow,color] duration-300 hover:border-[#0d1117] hover:text-white hover:shadow-[0_12px_30px_-12px_rgba(13,17,23,0.72)] focus-visible:ring-4 focus-visible:ring-white/45"
+                >
+                  <span
+                    aria-hidden="true"
+                    className="absolute inset-0 scale-105 bg-[#0d1117] opacity-0 transition-all duration-300 ease-out group-hover:scale-100 group-hover:opacity-100"
+                  />
+
+                  <span
+                    aria-hidden="true"
+                    className="absolute inset-x-0 top-0 h-px bg-white/25 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                  />
+
+                  <span className="relative z-10 flex items-center justify-center gap-2.5">
+                    <svg
+                      width="19"
+                      height="19"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      aria-hidden="true"
+                      className="transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-110"
+                    >
+                      <path d="M12 .7a11.3 11.3 0 0 0-3.57 22.02c.56.1.77-.24.77-.54v-2.1c-3.13.68-3.79-1.33-3.79-1.33-.51-1.3-1.25-1.65-1.25-1.65-1.02-.7.08-.69.08-.69 1.13.08 1.73 1.16 1.73 1.16 1 1.72 2.63 1.22 3.27.93.1-.73.39-1.22.71-1.5-2.5-.28-5.13-1.25-5.13-5.58 0-1.23.44-2.24 1.16-3.03-.12-.28-.5-1.43.11-2.98 0 0 .95-.3 3.11 1.16a10.8 10.8 0 0 1 5.66 0c2.16-1.46 3.1-1.16 3.1-1.16.62 1.55.23 2.7.12 2.98.72.79 1.16 1.8 1.16 3.03 0 4.34-2.64 5.29-5.15 5.57.4.35.76 1.04.76 2.1v3.1c0 .3.2.65.78.54A11.3 11.3 0 0 0 12 .7Z" />
+                    </svg>
+
+                    <span className="transition-all duration-300 group-hover:tracking-[0.02em]">
+                      GitHub
+                    </span>
+                  </span>
+                </motion.a>
               </div>
 
               <div className="my-4 flex items-center gap-4">

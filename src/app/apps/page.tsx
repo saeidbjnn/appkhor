@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import AuthButton from "@/components/auth/auth-button";
 import { useAppTheme } from "@/components/app-theme-provider";
 import Link from "next/link";
+import { motion, useReducedMotion } from "motion/react";
+import { Reveal, Stagger, StaggerItem } from "@/components/motion/reveal";
 
 type TransitionPhase = "idle" | "leaving" | "entering";
 
@@ -209,6 +211,7 @@ const freshApps = allApps.slice(0, 5);
 
 export default function AppsPage() {
   const { isDark, mounted, toggleTheme } = useAppTheme();
+  const reduceMotion = useReducedMotion();
 
   const [currentPage, setCurrentPage] = useState(1);
   const [transitionPhase, setTransitionPhase] =
@@ -397,14 +400,17 @@ export default function AppsPage() {
   return (
     <main
       dir="rtl"
-      className={`appkhor-page-enter min-h-screen transition-colors duration-300 ${
+      className={`min-h-screen transition-colors duration-300 ${
         isDark
           ? "bg-[#07120c] text-zinc-100"
           : "bg-[#f7faf7] text-[#17211a]"
       }`}
     >
       {/* Header */}
-      <header
+      <motion.header
+        initial={reduceMotion ? false : { opacity: 0, y: -14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
         className={`sticky top-0 z-50 border-b backdrop-blur-xl transition-colors ${
           isDark
             ? "border-white/10 bg-[#07120c]/90"
@@ -471,9 +477,12 @@ export default function AppsPage() {
           </nav>
 
           <div className="flex items-center gap-2">
-            <button
+            <motion.button
               type="button"
               onClick={toggleTheme}
+              whileHover={reduceMotion ? undefined : { y: -2, rotate: -5, scale: 1.04 }}
+              whileTap={reduceMotion ? undefined : { scale: 0.92 }}
+              transition={{ type: "spring", stiffness: 420, damping: 22 }}
               aria-label="تغییر حالت نمایش"
               title={isDark ? "حالت روشن" : "حالت شب"}
               className={`flex h-11 w-11 items-center justify-center rounded-xl border text-lg transition ${
@@ -487,9 +496,12 @@ export default function AppsPage() {
                   ? "☀️"
                   : "🌙"
                 : "🌙"}
-            </button>
+            </motion.button>
 
-            <a
+            <motion.a
+              whileHover={reduceMotion ? undefined : { y: -2, scale: 1.02 }}
+              whileTap={reduceMotion ? undefined : { scale: 0.97 }}
+              transition={{ type: "spring", stiffness: 380, damping: 24 }}
               href="https://reymit.ir/saeid_bjn"
               target="_blank"
               rel="noopener noreferrer"
@@ -500,12 +512,12 @@ export default function AppsPage() {
               }`}
             >
               حمایت مالی
-            </a>
+            </motion.a>
 
             <AuthButton />
           </div>
         </div>
-      </header>
+      </motion.header>
 
       {/* Page Title */}
       <section
@@ -578,7 +590,7 @@ export default function AppsPage() {
           }}
         />
 
-        <div className="relative z-10 mx-auto max-w-7xl px-5 py-20 text-center lg:px-8 lg:py-24">
+        <Reveal className="relative z-10 mx-auto max-w-7xl px-5 py-20 text-center lg:px-8 lg:py-24">
           <span
             className={`text-sm font-bold ${
               isDark ? "text-emerald-400" : "text-emerald-700"
@@ -602,7 +614,7 @@ export default function AppsPage() {
           >
             هرچی اپ کاربردی بخوای، اینجاست؛ تازه‌ها رو ببین و ابزار مناسب خودت رو پیدا کن.
           </p>
-        </div>
+        </Reveal>
       </section>
 
       {/* Fresh Apps */}
@@ -664,7 +676,7 @@ export default function AppsPage() {
         )}
 
         <div className="relative z-10 mx-auto max-w-7xl px-5 py-16 lg:px-8">
-          <div className="mb-8">
+          <Reveal className="mb-8">
             <span
               className={`text-sm font-bold ${
                 isDark ? "text-emerald-600" : "text-emerald-800"
@@ -686,12 +698,14 @@ export default function AppsPage() {
             >
               جدیدترین برنامه‌ها و ابزارهایی که به اپ‌خور اضافه شده‌اند.
             </p>
-          </div>
+          </Reveal>
 
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          <Stagger className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             {freshApps.map((app) => (
-              <article
-                key={app.name}
+              <StaggerItem key={app.name}>
+              <motion.article
+                whileHover={reduceMotion ? undefined : { y: -7, scale: 1.012 }}
+                transition={{ type: "spring", stiffness: 300, damping: 24 }}
                 className={`group flex min-h-[300px] flex-col rounded-3xl border p-5 transition duration-200 hover:-translate-y-1 ${
                   isDark
                     ? "border-white/10 bg-white/[0.03] shadow-[0_14px_45px_rgba(255,255,255,0.05)] hover:border-white/25 hover:shadow-[0_18px_60px_rgba(255,255,255,0.10)]"
@@ -734,16 +748,26 @@ export default function AppsPage() {
                   {app.description}
                 </p>
 
-                <button
+                <motion.button
                   type="button"
+                  whileHover={reduceMotion ? undefined : { y: -2, scale: 1.015 }}
+                  whileTap={reduceMotion ? undefined : { scale: 0.96 }}
+                  transition={{ type: "spring", stiffness: 420, damping: 24 }}
                   className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-800"
                 >
                   دانلود
-                  <span aria-hidden="true">↓</span>
-                </button>
-              </article>
+                  <motion.span
+                    aria-hidden="true"
+                    animate={reduceMotion ? undefined : { y: [0, 3, 0] }}
+                    transition={reduceMotion ? undefined : { duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
+                  >
+                    ↓
+                  </motion.span>
+                </motion.button>
+              </motion.article>
+              </StaggerItem>
             ))}
-          </div>
+          </Stagger>
         </div>
       </section>
 
@@ -814,7 +838,8 @@ export default function AppsPage() {
           }}
         />
 
-        <div className="relative z-10 mx-auto max-w-7xl px-5 py-20 lg:px-8">          <div className="mb-10">
+        <div className="relative z-10 mx-auto max-w-7xl px-5 py-20 lg:px-8">
+          <Reveal className="mb-10">
             <span className="text-sm font-bold text-emerald-600">
               همه ابزارها
             </span>
@@ -832,14 +857,18 @@ export default function AppsPage() {
             >
               اپ‌ها بر اساس زمان انتشار مرتب شده‌اند؛ جدیدترین‌ها اول نمایش داده می‌شوند.
             </p>
-          </div>
+          </Reveal>
 
           <div
             className={`grid gap-6 transition-all duration-[500ms] ease-in-out md:grid-cols-2 xl:grid-cols-3 ${getCardsAnimationClass()}`}
           >
             {currentApps.map((app) => (
-              <article
+              <motion.article
                 key={app.name}
+                initial={reduceMotion ? false : { opacity: 0, y: 16, scale: 0.985 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                whileHover={reduceMotion ? undefined : { y: -7, scale: 1.01 }}
+                transition={{ type: "spring", stiffness: 280, damping: 24 }}
                 className={`group flex flex-col overflow-hidden rounded-3xl border transition hover:-translate-y-1 ${
                   isDark
                     ? "border-white/10 bg-white/[0.03] shadow-[0_14px_45px_rgba(255,255,255,0.05)] hover:border-white/25 hover:shadow-[0_18px_60px_rgba(255,255,255,0.10)]"
@@ -887,22 +916,28 @@ export default function AppsPage() {
                       : "border-zinc-100"
                   }`}
                 >
-                  <button
+                  <motion.button
                     type="button"
+                    whileHover={reduceMotion ? undefined : { y: -2, scale: 1.012 }}
+                    whileTap={reduceMotion ? undefined : { scale: 0.96 }}
+                    transition={{ type: "spring", stiffness: 420, damping: 24 }}
                     className="w-full rounded-xl bg-emerald-700 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-800"
                   >
                     دانلود
-                  </button>
+                  </motion.button>
                 </div>
-              </article>
+              </motion.article>
             ))}
           </div>
 
           {/* Pagination */}
           <div className="mt-12 flex flex-wrap items-center justify-center gap-2">
-            <button
+            <motion.button
               type="button"
               onClick={() => changePage(currentPage - 1)}
+              whileHover={reduceMotion || currentPage === 1 ? undefined : { y: -2 }}
+              whileTap={reduceMotion || currentPage === 1 ? undefined : { scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 420, damping: 24 }}
               disabled={
                 currentPage === 1 ||
                 isPageChanging
@@ -916,16 +951,19 @@ export default function AppsPage() {
               }`}
             >
               قبلی
-            </button>
+            </motion.button>
 
             {Array.from(
               { length: totalPages },
               (_, index) => index + 1,
             ).map((page) => (
-              <button
+              <motion.button
                 key={page}
                 type="button"
                 onClick={() => changePage(page)}
+                whileHover={reduceMotion || currentPage === page ? undefined : { y: -2, scale: 1.04 }}
+                whileTap={reduceMotion ? undefined : { scale: 0.94 }}
+                transition={{ type: "spring", stiffness: 420, damping: 24 }}
                 disabled={isPageChanging}
                 className={`flex h-11 min-w-11 items-center justify-center rounded-xl border px-3 text-sm font-black transition ${
                   currentPage === page
@@ -936,12 +974,15 @@ export default function AppsPage() {
                 }`}
               >
                 {page.toLocaleString("fa-IR")}
-              </button>
+              </motion.button>
             ))}
 
-            <button
+            <motion.button
               type="button"
               onClick={() => changePage(currentPage + 1)}
+              whileHover={reduceMotion || currentPage === totalPages ? undefined : { y: -2 }}
+              whileTap={reduceMotion || currentPage === totalPages ? undefined : { scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 420, damping: 24 }}
               disabled={
                 currentPage === totalPages ||
                 isPageChanging
@@ -955,7 +996,7 @@ export default function AppsPage() {
               }`}
             >
               بعدی
-            </button>
+            </motion.button>
           </div>
         </div>
       </section>

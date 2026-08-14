@@ -1,10 +1,11 @@
 "use client";
 
 import { type MouseEvent } from "react";
+import Link from "next/link";
+import { motion } from "motion/react";
 
 import AuthButton from "@/components/auth/auth-button";
 import { useAppTheme } from "@/components/app-theme-provider";
-import Link from "next/link";
 
 
 const apps = [
@@ -140,13 +141,16 @@ export default function Home() {
   return (
     <main
       dir="rtl"
-      className={`appkhor-page-enter min-h-screen transition-colors duration-300 ${
+      className={`min-h-screen transition-colors duration-300 ${
         isDark
           ? "bg-[#07120c] text-zinc-100"
           : "bg-[#f7faf7] text-[#17211a]"
       }`}
     >
-      <header
+      <motion.header
+        initial={{ opacity: 0, y: -14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
         className={`sticky top-0 z-50 border-b backdrop-blur-xl transition-colors ${
           isDark
             ? "border-white/10 bg-[#07120c]/90"
@@ -216,9 +220,12 @@ export default function Home() {
           </nav>
 
           <div className="flex items-center gap-2">
-            <button
+            <motion.button
               type="button"
               onClick={toggleTheme}
+              whileHover={{ scale: 1.08, rotate: isDark ? -8 : 8 }}
+              whileTap={{ scale: 0.92 }}
+              transition={{ type: "spring", stiffness: 420, damping: 22 }}
               aria-label="تغییر حالت نمایش"
               title={
                 isDark
@@ -236,9 +243,11 @@ export default function Home() {
                   ? "☀️"
                   : "🌙"
                 : "🌙"}
-            </button>
+            </motion.button>
 
-            <a
+            <motion.a
+              whileHover={{ y: -2, scale: 1.02 }}
+              whileTap={{ scale: 0.97 }}
               href="https://reymit.ir/saeid_bjn"
               target="_blank"
               rel="noopener noreferrer"
@@ -249,12 +258,12 @@ export default function Home() {
               }`}
             >
               حمایت مالی
-            </a>
+            </motion.a>
 
             <AuthButton />
           </div>
         </div>
-      </header>
+      </motion.header>
 
       <section
         className={`relative overflow-hidden border-b ${
@@ -267,7 +276,11 @@ export default function Home() {
         <div className="absolute -right-40 bottom-0 h-80 w-80 rounded-full bg-lime-500/10 blur-3xl" />
 
         <div className="relative mx-auto grid max-w-7xl items-center gap-14 px-5 py-20 lg:grid-cols-[1.15fr_0.85fr] lg:px-8 lg:py-28">
-          <div>
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
+          >
             <div
               className={`mb-6 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-bold ${
                 isDark
@@ -329,12 +342,15 @@ export default function Home() {
                   }`}
                 />
 
-                <button
+                <motion.button
                   type="button"
-                  className="rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white transition hover:bg-emerald-800"
+                  whileHover={{ y: -2, scale: 1.025 }}
+                  whileTap={{ scale: 0.96 }}
+                  transition={{ type: "spring", stiffness: 420, damping: 24 }}
+                  className="rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-emerald-800"
                 >
                   جست‌وجو
-                </button>
+                </motion.button>
               </div>
             </div>
 
@@ -384,9 +400,15 @@ export default function Home() {
                 فارسی
               </div>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="relative mx-auto w-full max-w-lg">
+          <motion.div
+            initial={{ opacity: 0, y: 28, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.65, delay: 0.16, ease: [0.22, 1, 0.36, 1] }}
+            whileHover={{ y: -5 }}
+            className="relative mx-auto w-full max-w-lg"
+          >
             <div className="absolute -inset-5 rounded-[2.5rem] bg-emerald-500/10 blur-2xl" />
 
             <div
@@ -420,8 +442,15 @@ export default function Home() {
 
               <div className="space-y-3">
                 {apps.map((app, index) => (
-                  <div
+                  <motion.div
                     key={app.name}
+                    initial={{ opacity: 0, x: 18 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{
+                      duration: 0.4,
+                      delay: 0.3 + index * 0.08,
+                    }}
+                    whileHover={{ x: -4, scale: 1.01 }}
                     className={`flex items-center gap-4 rounded-2xl border p-4 ${
                       isDark
                         ? "border-white/5 bg-white/[0.03]"
@@ -451,11 +480,11 @@ export default function Home() {
                     <span className="text-sm font-black text-emerald-500">
                       {index + 1}
                     </span>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </section>
 
@@ -485,12 +514,18 @@ export default function Home() {
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {categories.map((category) => (
-            <a
+            <motion.a
               href="#apps"
               onClick={(event) =>
                 handleSectionClick(event, "apps")
               }
               key={category.name}
+              initial={{ opacity: 0, y: 18 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.25 }}
+              whileHover={{ y: -7, scale: 1.02 }}
+              whileTap={{ scale: 0.985 }}
+              transition={{ type: "spring", stiffness: 280, damping: 22 }}
               className={`group rounded-2xl border p-5 transition hover:-translate-y-1 ${
                 isDark
                   ? "border-white/10 bg-white/[0.03] hover:border-emerald-700"
@@ -526,7 +561,7 @@ export default function Home() {
               <p className="mt-2 text-sm text-zinc-500">
                 {category.count}
               </p>
-            </a>
+            </motion.a>
           ))}
         </div>
       </section>
@@ -562,9 +597,14 @@ export default function Home() {
 
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             {apps.map((app) => (
-              <article
+              <motion.article
                 key={app.name}
-                className={`group overflow-hidden rounded-3xl border transition hover:-translate-y-1 ${
+                initial={{ opacity: 0, y: 26, scale: 0.98 }}
+                whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                viewport={{ once: true, amount: 0.2 }}
+                whileHover={{ y: -8, scale: 1.015 }}
+                transition={{ type: "spring", stiffness: 230, damping: 22 }}
+                className={`group overflow-hidden rounded-3xl border transition-colors ${
                   isDark
                     ? "border-white/10 bg-white/[0.03] hover:border-emerald-700"
                     : "border-zinc-200 bg-white hover:border-emerald-300 hover:shadow-xl"
@@ -659,16 +699,22 @@ export default function Home() {
                       : "border-zinc-100"
                   }`}
                 >
-                  <button
+                  <motion.button
                     type="button"
-                    className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-800"
+                    whileHover={{ y: -2, scale: 1.015 }}
+                    whileTap={{ scale: 0.97 }}
+                    transition={{ type: "spring", stiffness: 420, damping: 24 }}
+                    className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-emerald-800"
                   >
                     مشاهده و دانلود
                     <DownloadIcon />
-                  </button>
+                  </motion.button>
 
-                  <button
+                  <motion.button
                     type="button"
+                    whileHover={{ rotate: -8, scale: 1.08 }}
+                    whileTap={{ scale: 0.92 }}
+                    transition={{ type: "spring", stiffness: 420, damping: 22 }}
                     aria-label={`مشاهده ${app.name}`}
                     className={`flex h-11 w-11 items-center justify-center rounded-xl border transition hover:border-emerald-500 hover:text-emerald-500 ${
                       isDark
@@ -677,9 +723,9 @@ export default function Home() {
                     }`}
                   >
                     <ArrowIcon />
-                  </button>
+                  </motion.button>
                 </div>
-              </article>
+              </motion.article>
             ))}
           </div>
         </div>
@@ -689,7 +735,14 @@ export default function Home() {
         id="about"
         className="mx-auto max-w-7xl px-5 py-20 lg:px-8"
       >
-        <div className="relative overflow-hidden rounded-[2rem] bg-[#123c28] px-7 py-12 text-white shadow-2xl shadow-emerald-950/20 md:px-12">
+        <motion.div
+          initial={{ opacity: 0, y: 28, scale: 0.985 }}
+          whileInView={{ opacity: 1, y: 0, scale: 1 }}
+          viewport={{ once: true, amount: 0.25 }}
+          whileHover={{ scale: 1.006 }}
+          transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+          className="relative overflow-hidden rounded-[2rem] bg-[#123c28] px-7 py-12 text-white shadow-2xl shadow-emerald-950/20 md:px-12"
+        >
           <div className="absolute -left-20 -top-20 h-64 w-64 rounded-full border-[40px] border-white/5" />
           <div className="absolute -bottom-28 right-12 h-64 w-64 rounded-full bg-emerald-500/10" />
 
@@ -712,17 +765,20 @@ export default function Home() {
               </p>
             </div>
 
-            <a
+            <motion.a
+              whileHover={{ y: -3, scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              transition={{ type: "spring", stiffness: 360, damping: 22 }}
               href="https://reymit.ir/saeid_bjn"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-white px-7 py-4 font-black text-emerald-900 transition hover:bg-emerald-50"
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-white px-7 py-4 font-black text-emerald-900 transition-colors hover:bg-emerald-50"
             >
               حمایت از اپ‌خور
               <ArrowIcon />
-            </a>
+            </motion.a>
           </div>
-        </div>
+        </motion.div>
       </section>
 
       <footer

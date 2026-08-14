@@ -2,19 +2,30 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 export const runtime = "nodejs";
 
-type GoogleTokenResponse = {
+type GitHubTokenResponse = {
   access_token?: string;
+  token_type?: string;
+  scope?: string;
+  error?: string;
+  error_description?: string;
 };
 
-type GoogleUserInfo = {
-  sub?: string;
-  email?: string;
-  email_verified?: boolean;
-  name?: string;
-  picture?: string;
+type GitHubUser = {
+  id: number;
+  login: string;
+  name: string | null;
+  email: string | null;
+  avatar_url: string | null;
 };
 
-type ExistingGoogleIdentity = {
+type GitHubEmail = {
+  email: string;
+  primary: boolean;
+  verified: boolean;
+  visibility: string | null;
+};
+
+type ExistingGitHubIdentity = {
   user_id: string;
   account_status: string;
 };
@@ -29,7 +40,7 @@ type CurrentSessionUser = {
   account_status: string;
 };
 
-type UserGoogleIdentity = {
+type UserGitHubIdentity = {
   provider_user_id: string;
 };
 
@@ -74,7 +85,7 @@ function getCookie(
   return null;
 }
 
-function cookieHeader(
+function createCookie(
   name: string,
   value: string,
   maxAge: number,
@@ -92,18 +103,27 @@ function cookieHeader(
     .join("; ");
 }
 
-function clearGoogleStateCookie(isHttps: boolean): string {
-  return cookieHeader(
-    "appkhor_google_oauth_state",
+function clearStateCookie(isHttps: boolean): string {
+  return createCookie(
+    "appkhor_github_oauth_state",
     "",
     0,
     isHttps,
   );
 }
 
-function clearGoogleModeCookie(isHttps: boolean): string {
-  return cookieHeader(
-    "appkhor_google_oauth_mode",
+function clearVerifierCookie(isHttps: boolean): string {
+  return createCookie(
+    "appkhor_github_oauth_verifier",
+    "",
+    0,
+    isHttps,
+  );
+}
+
+function clearModeCookie(isHttps: boolean): string {
+  return createCookie(
+    "appkhor_github_oauth_mode",
     "",
     0,
     isHttps,
@@ -116,35 +136,33 @@ function redirectToAuth(
   isHttps: boolean,
 ): Response {
   const url = new URL("/auth", appUrl);
-  url.searchParams.set("google_error", reason);
+  url.searchParams.set("github_error", reason);
 
   return new Response(null, {
     status: 302,
     headers: [
       ["Location", url.toString()],
-      ["Set-Cookie", clearGoogleStateCookie(isHttps)],
-      ["Set-Cookie", clearGoogleModeCookie(isHttps)],
+      ["Set-Cookie", clearStateCookie(isHttps)],
+      ["Set-Cookie", clearVerifierCookie(isHttps)],
+      ["Set-Cookie", clearModeCookie(isHttps)],
     ],
   });
 }
 
-function redirectHome(
+function redirectAfterLink(
   appUrl: string,
   isHttps: boolean,
-  linked = false,
 ): Response {
   const url = new URL("/", appUrl);
-
-  if (linked) {
-    url.searchParams.set("google_linked", "1");
-  }
+  url.searchParams.set("github_linked", "1");
 
   return new Response(null, {
     status: 302,
     headers: [
       ["Location", url.toString()],
-      ["Set-Cookie", clearGoogleStateCookie(isHttps)],
-      ["Set-Cookie", clearGoogleModeCookie(isHttps)],
+      ["Set-Cookie", clearStateCookie(isHttps)],
+      ["Set-Cookie", clearVerifierCookie(isHttps)],
+      ["Set-Cookie", clearModeCookie(isHttps)],
     ],
   });
 }
@@ -155,32 +173,30 @@ export async function GET(request: Request) {
 
   const { env } = getCloudflareContext();
 
-  const googleEnv = env as typeof env & {
-    GOOGLE_CLIENT_ID?: string;
-    GOOGLE_CLIENT_SECRET?: string;
+  const githubEnv = env as typeof env & {
+    GITHUB_CLIENT_ID?: string;
+    GITHUB_CLIENT_SECRET?: string;
     APP_URL?: string;
   };
 
   if (
-    !googleEnv.GOOGLE_CLIENT_ID ||
-    !googleEnv.GOOGLE_CLIENT_SECRET ||
-    !googleEnv.APP_URL
+    !githubEnv.GITHUB_CLIENT_ID ||
+    !githubEnv.GITHUB_CLIENT_SECRET ||
+    !githubEnv.APP_URL
   ) {
     return Response.json(
       {
         success: false,
-        message: "تنظیمات ورود با گوگل کامل نیست.",
+        message: "تنظیمات ورود با گیت‌هاب کامل نیست.",
       },
       { status: 500 },
     );
   }
 
-  const appUrl = googleEnv.APP_URL;
+  const appUrl = githubEnv.APP_URL;
 
   try {
-    const oauthError = requestUrl.searchParams.get("error");
-
-    if (oauthError) {
+    if (requestUrl.searchParams.get("error")) {
       return redirectToAuth(
         appUrl,
         "cancelled",
@@ -194,20 +210,25 @@ export async function GET(request: Request) {
 
     const storedState = getCookie(
       request,
-      "appkhor_google_oauth_state",
+      "appkhor_github_oauth_state",
     );
 
-    const oauthMode = getCookie(
+    const codeVerifier = getCookie(
       request,
-      "appkhor_google_oauth_mode",
+      "appkhor_github_oauth_verifier",
     );
 
-    const isLinkMode = oauthMode === "link";
+    const isLinkMode =
+      getCookie(
+        request,
+        "appkhor_github_oauth_mode",
+      ) === "link";
 
     if (
       !code ||
       !returnedState ||
       !storedState ||
+      !codeVerifier ||
       returnedState !== storedState
     ) {
       return redirectToAuth(
@@ -264,30 +285,31 @@ export async function GET(request: Request) {
     }
 
     const redirectUri =
-      `${appUrl}/api/auth/google/callback`;
+      `${appUrl}/api/auth/github/callback`;
 
     const tokenResponse = await fetch(
-      "https://oauth2.googleapis.com/token",
+      "https://github.com/login/oauth/access_token",
       {
         method: "POST",
         headers: {
+          Accept: "application/json",
           "Content-Type":
             "application/x-www-form-urlencoded",
         },
         body: new URLSearchParams({
-          code,
-          client_id: googleEnv.GOOGLE_CLIENT_ID,
+          client_id: githubEnv.GITHUB_CLIENT_ID,
           client_secret:
-            googleEnv.GOOGLE_CLIENT_SECRET,
+            githubEnv.GITHUB_CLIENT_SECRET,
+          code,
           redirect_uri: redirectUri,
-          grant_type: "authorization_code",
+          code_verifier: codeVerifier,
         }),
       },
     );
 
     if (!tokenResponse.ok) {
       console.error(
-        "Google token exchange failed:",
+        "GitHub token exchange failed:",
         await tokenResponse.text(),
       );
 
@@ -299,30 +321,43 @@ export async function GET(request: Request) {
     }
 
     const tokenData =
-      (await tokenResponse.json()) as GoogleTokenResponse;
+      (await tokenResponse.json()) as GitHubTokenResponse;
 
-    if (!tokenData.access_token) {
+    if (
+      tokenData.error ||
+      !tokenData.access_token
+    ) {
+      console.error(
+        "GitHub OAuth token error:",
+        tokenData.error,
+        tokenData.error_description,
+      );
+
       return redirectToAuth(
         appUrl,
-        "missing_access_token",
+        "token_exchange_failed",
         isHttps,
       );
     }
 
-    const userInfoResponse = await fetch(
-      "https://openidconnect.googleapis.com/v1/userinfo",
+    const githubHeaders = {
+      Accept: "application/vnd.github+json",
+      Authorization: `Bearer ${tokenData.access_token}`,
+      "X-GitHub-Api-Version": "2026-03-10",
+      "User-Agent": "AppKhor",
+    };
+
+    const userResponse = await fetch(
+      "https://api.github.com/user",
       {
-        headers: {
-          Authorization:
-            `Bearer ${tokenData.access_token}`,
-        },
+        headers: githubHeaders,
       },
     );
 
-    if (!userInfoResponse.ok) {
+    if (!userResponse.ok) {
       console.error(
-        "Google userinfo failed:",
-        await userInfoResponse.text(),
+        "GitHub user fetch failed:",
+        await userResponse.text(),
       );
 
       return redirectToAuth(
@@ -332,25 +367,68 @@ export async function GET(request: Request) {
       );
     }
 
-    const googleUser =
-      (await userInfoResponse.json()) as GoogleUserInfo;
+    const githubUser =
+      (await userResponse.json()) as GitHubUser;
 
     if (
-      !googleUser.sub ||
-      !googleUser.email ||
-      googleUser.email_verified !== true
+      !githubUser.id ||
+      !githubUser.login
     ) {
       return redirectToAuth(
         appUrl,
-        "invalid_google_account",
+        "invalid_github_account",
+        isHttps,
+      );
+    }
+
+    const emailsResponse = await fetch(
+      "https://api.github.com/user/emails",
+      {
+        headers: githubHeaders,
+      },
+    );
+
+    if (!emailsResponse.ok) {
+      console.error(
+        "GitHub emails fetch failed:",
+        await emailsResponse.text(),
+      );
+
+      return redirectToAuth(
+        appUrl,
+        "email_unavailable",
+        isHttps,
+      );
+    }
+
+    const githubEmails =
+      (await emailsResponse.json()) as GitHubEmail[];
+
+    const primaryVerifiedEmail =
+      githubEmails.find(
+        (item) =>
+          item.primary &&
+          item.verified,
+      ) ??
+      githubEmails.find(
+        (item) => item.verified,
+      );
+
+    if (!primaryVerifiedEmail) {
+      return redirectToAuth(
+        appUrl,
+        "verified_email_required",
         isHttps,
       );
     }
 
     const email =
-      googleUser.email.trim().toLowerCase();
+      primaryVerifiedEmail.email
+        .trim()
+        .toLowerCase();
 
-    const providerUserId = googleUser.sub;
+    const providerUserId =
+      String(githubUser.id);
 
     const existingIdentity = await env.appkhor_db
       .prepare(
@@ -360,14 +438,13 @@ export async function GET(request: Request) {
         FROM auth_identities
         INNER JOIN users
           ON users.id = auth_identities.user_id
-        WHERE auth_identities.provider = 'GOOGLE'
+        WHERE auth_identities.provider = 'GITHUB'
           AND auth_identities.provider_user_id = ?
         LIMIT 1`,
       )
       .bind(providerUserId)
-      .first<ExistingGoogleIdentity>();
+      .first<ExistingGitHubIdentity>();
 
-    // اتصال دستی Google به حسابی که همین حالا وارد آن هستیم.
     if (isLinkMode) {
       if (!linkingUser) {
         return redirectToAuth(
@@ -383,37 +460,37 @@ export async function GET(request: Request) {
       ) {
         return redirectToAuth(
           appUrl,
-          "google_already_linked_elsewhere",
+          "github_already_linked_elsewhere",
           isHttps,
         );
       }
 
-      const currentGoogleIdentity =
+      const currentGitHubIdentity =
         await env.appkhor_db
           .prepare(
             `SELECT provider_user_id
             FROM auth_identities
             WHERE user_id = ?
-              AND provider = 'GOOGLE'
+              AND provider = 'GITHUB'
             LIMIT 1`,
           )
           .bind(linkingUser.id)
-          .first<UserGoogleIdentity>();
+          .first<UserGitHubIdentity>();
 
       if (
-        currentGoogleIdentity &&
-        currentGoogleIdentity.provider_user_id !== providerUserId
+        currentGitHubIdentity &&
+        currentGitHubIdentity.provider_user_id !== providerUserId
       ) {
         return redirectToAuth(
           appUrl,
-          "google_already_linked",
+          "github_already_linked",
           isHttps,
         );
       }
 
       if (
         !existingIdentity &&
-        !currentGoogleIdentity
+        !currentGitHubIdentity
       ) {
         await env.appkhor_db
           .prepare(
@@ -427,7 +504,8 @@ export async function GET(request: Request) {
               last_used_at
             )
             VALUES (
-              ?, ?, 'GOOGLE', ?, ?, ?,
+              ?, ?, 'GITHUB',
+              ?, ?, ?,
               CURRENT_TIMESTAMP
             )`,
           )
@@ -436,7 +514,7 @@ export async function GET(request: Request) {
             linkingUser.id,
             providerUserId,
             email,
-            googleUser.name ?? null,
+            githubUser.login,
           )
           .run();
       } else {
@@ -449,11 +527,11 @@ export async function GET(request: Request) {
               updated_at = CURRENT_TIMESTAMP,
               last_used_at = CURRENT_TIMESTAMP
             WHERE user_id = ?
-              AND provider = 'GOOGLE'`,
+              AND provider = 'GITHUB'`,
           )
           .bind(
             email,
-            googleUser.name ?? null,
+            githubUser.login,
             linkingUser.id,
           )
           .run();
@@ -469,22 +547,21 @@ export async function GET(request: Request) {
           WHERE id = ?`,
         )
         .bind(
-          googleUser.name ?? null,
-          googleUser.picture ?? null,
+          githubUser.name ??
+            githubUser.login,
+          githubUser.avatar_url,
           linkingUser.id,
         )
         .run();
 
-      return redirectHome(
+      return redirectAfterLink(
         appUrl,
         isHttps,
-        true,
       );
     }
 
     let userId: string;
 
-    // Google قبلاً به یک حساب اپ‌خور متصل شده است.
     if (existingIdentity) {
       if (
         existingIdentity.account_status !== "ACTIVE"
@@ -507,12 +584,12 @@ export async function GET(request: Request) {
               provider_username = ?,
               updated_at = CURRENT_TIMESTAMP,
               last_used_at = CURRENT_TIMESTAMP
-            WHERE provider = 'GOOGLE'
+            WHERE provider = 'GITHUB'
               AND provider_user_id = ?`,
           )
           .bind(
             email,
-            googleUser.name ?? null,
+            githubUser.login,
             providerUserId,
           ),
 
@@ -527,14 +604,13 @@ export async function GET(request: Request) {
             WHERE id = ?`,
           )
           .bind(
-            googleUser.name ?? null,
-            googleUser.picture ?? null,
+            githubUser.name ??
+              githubUser.login,
+            githubUser.avatar_url,
             userId,
           ),
       ]);
     } else {
-      // Google جدید است؛ اگر ایمیل تاییدشده از قبل وجود دارد،
-      // همان حساب را با Google به صورت خودکار Merge می‌کنیم.
       const existingEmailUser =
         await env.appkhor_db
           .prepare(
@@ -560,32 +636,32 @@ export async function GET(request: Request) {
           );
         }
 
-        const existingUserGoogleIdentity =
+        const existingUserGitHubIdentity =
           await env.appkhor_db
             .prepare(
               `SELECT provider_user_id
               FROM auth_identities
               WHERE user_id = ?
-                AND provider = 'GOOGLE'
+                AND provider = 'GITHUB'
               LIMIT 1`,
             )
             .bind(existingEmailUser.id)
-            .first<UserGoogleIdentity>();
+            .first<UserGitHubIdentity>();
 
         if (
-          existingUserGoogleIdentity &&
-          existingUserGoogleIdentity.provider_user_id !== providerUserId
+          existingUserGitHubIdentity &&
+          existingUserGitHubIdentity.provider_user_id !== providerUserId
         ) {
           return redirectToAuth(
             appUrl,
-            "google_already_linked",
+            "github_already_linked",
             isHttps,
           );
         }
 
         userId = existingEmailUser.id;
 
-        if (!existingUserGoogleIdentity) {
+        if (!existingUserGitHubIdentity) {
           await env.appkhor_db
             .prepare(
               `INSERT INTO auth_identities (
@@ -598,7 +674,8 @@ export async function GET(request: Request) {
                 last_used_at
               )
               VALUES (
-                ?, ?, 'GOOGLE', ?, ?, ?,
+                ?, ?, 'GITHUB',
+                ?, ?, ?,
                 CURRENT_TIMESTAMP
               )`,
             )
@@ -607,7 +684,7 @@ export async function GET(request: Request) {
               userId,
               providerUserId,
               email,
-              googleUser.name ?? null,
+              githubUser.login,
             )
             .run();
         } else {
@@ -620,11 +697,11 @@ export async function GET(request: Request) {
                 updated_at = CURRENT_TIMESTAMP,
                 last_used_at = CURRENT_TIMESTAMP
               WHERE user_id = ?
-                AND provider = 'GOOGLE'`,
+                AND provider = 'GITHUB'`,
             )
             .bind(
               email,
-              googleUser.name ?? null,
+              githubUser.login,
               userId,
             )
             .run();
@@ -641,20 +718,20 @@ export async function GET(request: Request) {
             WHERE id = ?`,
           )
           .bind(
-            googleUser.name ?? null,
-            googleUser.picture ?? null,
+            githubUser.name ??
+              githubUser.login,
+            githubUser.avatar_url,
             userId,
           )
           .run();
       } else {
-        // نه Google وجود دارد، نه ایمیل؛ یک کاربر جدید می‌سازیم.
         userId = crypto.randomUUID();
 
         const identityId =
           crypto.randomUUID();
 
         const legacyPasswordMarker =
-          `google_oauth_only:${randomToken(32)}`;
+          `github_oauth_only:${randomToken(32)}`;
 
         await env.appkhor_db.batch([
           env.appkhor_db
@@ -686,8 +763,9 @@ export async function GET(request: Request) {
               email,
               legacyPasswordMarker,
               email,
-              googleUser.name ?? null,
-              googleUser.picture ?? null,
+              githubUser.name ??
+                githubUser.login,
+              githubUser.avatar_url,
             ),
 
           env.appkhor_db
@@ -702,7 +780,8 @@ export async function GET(request: Request) {
                 last_used_at
               )
               VALUES (
-                ?, ?, 'GOOGLE', ?, ?, ?,
+                ?, ?, 'GITHUB',
+                ?, ?, ?,
                 CURRENT_TIMESTAMP
               )`,
             )
@@ -711,7 +790,7 @@ export async function GET(request: Request) {
               userId,
               providerUserId,
               email,
-              googleUser.name ?? null,
+              githubUser.login,
             ),
         ]);
       }
@@ -761,7 +840,7 @@ export async function GET(request: Request) {
       )
       .run();
 
-    const sessionCookie = cookieHeader(
+    const sessionCookie = createCookie(
       "appkhor_session",
       sessionToken,
       sessionLifetimeSeconds,
@@ -781,17 +860,21 @@ export async function GET(request: Request) {
         ["Set-Cookie", sessionCookie],
         [
           "Set-Cookie",
-          clearGoogleStateCookie(isHttps),
+          clearStateCookie(isHttps),
         ],
         [
           "Set-Cookie",
-          clearGoogleModeCookie(isHttps),
+          clearVerifierCookie(isHttps),
+        ],
+        [
+          "Set-Cookie",
+          clearModeCookie(isHttps),
         ],
       ],
     });
   } catch (error) {
     console.error(
-      "Google OAuth callback error:",
+      "GitHub OAuth callback error:",
       error,
     );
 
