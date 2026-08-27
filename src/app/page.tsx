@@ -1,897 +1,251 @@
-"use client";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
+import HomeClient from "./home-client";
 
-import { type MouseEvent } from "react";
-import Link from "next/link";
-import { motion } from "motion/react";
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-import AuthButton from "@/components/auth/auth-button";
-import { useAppTheme } from "@/components/app-theme-provider";
+type AppRow = {
+  id: string;
+  slug: string;
+  name: string;
+  name_fa: string | null;
+  short_description_fa: string;
+  logo_url: string | null;
+  developer_name: string | null;
+  license_name: string | null;
+  is_featured: number;
+  published_at: string | null;
+  category_name_fa: string | null;
+  platform_count: number;
+  click_count: number;
+};
 
+type CategoryRow = {
+  id: string;
+  slug: string;
+  name_fa: string;
+  icon: string | null;
+  app_count: number;
+};
 
-const apps = [
-  {
-    name: "ویرایشگر متن آنلاین",
-    description:
-      "یک ابزار سریع و ساده برای نوشتن، ویرایش و ذخیره متن در مرورگر.",
-    category: "ابزار کاربردی",
-    version: "1.2.0",
-    size: "تحت وب",
-    downloads: "۱٬۲۸۰",
-    icon: "✍️",
-    featured: true,
-  },
-  {
-    name: "تبدیل‌کننده تصویر",
-    description:
-      "تغییر اندازه و تبدیل فرمت تصاویر، بدون نیاز به نصب برنامه.",
-    category: "تصویر و گرافیک",
-    version: "2.0.1",
-    size: "۸ مگابایت",
-    downloads: "۹۴۰",
-    icon: "🖼️",
-    featured: false,
-  },
-  {
-    name: "مدیریت کارهای روزانه",
-    description:
-      "کارهای روزانه خود را ثبت، دسته‌بندی و مرحله‌به‌مرحله مدیریت کن.",
-    category: "بهره‌وری",
-    version: "1.5.3",
-    size: "تحت وب",
-    downloads: "۷۶۵",
-    icon: "✅",
-    featured: false,
-  },
-];
+type StatsRow = {
+  published_apps: number;
+  outbound_clicks: number;
+  active_categories: number;
+};
 
-const categories = [
-  { name: "ابزارهای تحت وب", count: "۱۲ اپ", icon: "🌐" },
-  { name: "بهره‌وری", count: "۸ اپ", icon: "⚡" },
-  { name: "تصویر و گرافیک", count: "۶ اپ", icon: "🎨" },
-  { name: "برنامه‌نویسی", count: "۵ اپ", icon: "💻" },
-];
+export type HomeApp = {
+  id: string;
+  slug: string;
+  name: string;
+  nameFa: string | null;
+  description: string;
+  logoUrl: string | null;
+  developerName: string | null;
+  licenseName: string | null;
+  featured: boolean;
+  publishedAt: string | null;
+  category: string | null;
+  platformCount: number;
+  clickCount: number;
+};
 
-function SearchIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className="h-5 w-5"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      aria-hidden="true"
-    >
-      <circle cx="11" cy="11" r="7" />
-      <path d="m20 20-3.5-3.5" />
-    </svg>
-  );
+export type HomeCategory = {
+  id: string;
+  slug: string;
+  name: string;
+  icon: string | null;
+  appCount: number;
+};
+
+export type HomeStats = {
+  publishedApps: number;
+  outboundClicks: number;
+  activeCategories: number;
+};
+
+function mapApp(row: AppRow): HomeApp {
+  return {
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    nameFa: row.name_fa,
+    description: row.short_description_fa,
+    logoUrl: row.logo_url,
+    developerName: row.developer_name,
+    licenseName: row.license_name,
+    featured: row.is_featured === 1,
+    publishedAt: row.published_at,
+    category: row.category_name_fa,
+    platformCount: Number(row.platform_count ?? 0),
+    clickCount: Number(row.click_count ?? 0),
+  };
 }
 
-function ArrowIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className="h-5 w-5"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      aria-hidden="true"
-    >
-      <path d="M5 12h14" />
-      <path d="m13 6 6 6-6 6" />
-    </svg>
+export default async function Home() {
+  const { env } = getCloudflareContext();
+
+  const [latestResult, popularResult, categoriesResult, statsResult] =
+    await Promise.all([
+      env.appkhor_db
+        .prepare(
+          `SELECT
+            apps.id,
+            apps.slug,
+            apps.name,
+            apps.name_fa,
+            apps.short_description_fa,
+            apps.logo_url,
+            apps.developer_name,
+            apps.license_name,
+            apps.is_featured,
+            apps.published_at,
+            (
+              SELECT categories.name_fa
+              FROM app_categories
+              INNER JOIN categories
+                ON categories.id = app_categories.category_id
+              WHERE app_categories.app_id = apps.id
+                AND categories.is_active = 1
+              ORDER BY categories.sort_order, categories.name_fa
+              LIMIT 1
+            ) AS category_name_fa,
+            (
+              SELECT COUNT(*)
+              FROM app_platforms
+              INNER JOIN platforms
+                ON platforms.id = app_platforms.platform_id
+              WHERE app_platforms.app_id = apps.id
+                AND platforms.is_active = 1
+            ) AS platform_count,
+            (
+              SELECT COUNT(*)
+              FROM app_links
+              INNER JOIN outbound_clicks
+                ON outbound_clicks.link_id = app_links.id
+              WHERE app_links.app_id = apps.id
+            ) AS click_count
+          FROM apps
+          WHERE apps.status = 'PUBLISHED'
+          ORDER BY
+            CASE WHEN apps.published_at IS NULL THEN 1 ELSE 0 END,
+            apps.published_at DESC,
+            apps.created_at DESC
+          LIMIT 3`,
+        )
+        .all<AppRow>(),
+
+      env.appkhor_db
+        .prepare(
+          `SELECT
+            apps.id,
+            apps.slug,
+            apps.name,
+            apps.name_fa,
+            apps.short_description_fa,
+            apps.logo_url,
+            apps.developer_name,
+            apps.license_name,
+            apps.is_featured,
+            apps.published_at,
+            (
+              SELECT categories.name_fa
+              FROM app_categories
+              INNER JOIN categories
+                ON categories.id = app_categories.category_id
+              WHERE app_categories.app_id = apps.id
+                AND categories.is_active = 1
+              ORDER BY categories.sort_order, categories.name_fa
+              LIMIT 1
+            ) AS category_name_fa,
+            (
+              SELECT COUNT(*)
+              FROM app_platforms
+              INNER JOIN platforms
+                ON platforms.id = app_platforms.platform_id
+              WHERE app_platforms.app_id = apps.id
+                AND platforms.is_active = 1
+            ) AS platform_count,
+            (
+              SELECT COUNT(*)
+              FROM app_links
+              INNER JOIN outbound_clicks
+                ON outbound_clicks.link_id = app_links.id
+              WHERE app_links.app_id = apps.id
+                AND outbound_clicks.created_at >= datetime('now', '-7 days')
+            ) AS click_count
+          FROM apps
+          WHERE apps.status = 'PUBLISHED'
+          ORDER BY click_count DESC,
+            apps.is_featured DESC,
+            CASE WHEN apps.published_at IS NULL THEN 1 ELSE 0 END,
+            apps.published_at DESC,
+            apps.created_at DESC
+          LIMIT 3`,
+        )
+        .all<AppRow>(),
+
+      env.appkhor_db
+        .prepare(
+          `SELECT
+            categories.id,
+            categories.slug,
+            categories.name_fa,
+            categories.icon,
+            COUNT(DISTINCT apps.id) AS app_count
+          FROM categories
+          LEFT JOIN app_categories
+            ON app_categories.category_id = categories.id
+          LEFT JOIN apps
+            ON apps.id = app_categories.app_id
+            AND apps.status = 'PUBLISHED'
+          WHERE categories.is_active = 1
+          GROUP BY
+            categories.id,
+            categories.slug,
+            categories.name_fa,
+            categories.icon,
+            categories.sort_order
+          ORDER BY app_count DESC, categories.sort_order, categories.name_fa
+          LIMIT 4`,
+        )
+        .all<CategoryRow>(),
+
+      env.appkhor_db
+        .prepare(
+          `SELECT
+            (SELECT COUNT(*) FROM apps WHERE status = 'PUBLISHED') AS published_apps,
+            (SELECT COUNT(*) FROM outbound_clicks) AS outbound_clicks,
+            (SELECT COUNT(*) FROM categories WHERE is_active = 1) AS active_categories`,
+        )
+        .first<StatsRow>(),
+    ]);
+
+  const latestApps = (latestResult.results ?? []).map(mapApp);
+  const popularApps = (popularResult.results ?? []).map(mapApp);
+
+  const categories: HomeCategory[] = (categoriesResult.results ?? []).map(
+    (row) => ({
+      id: row.id,
+      slug: row.slug,
+      name: row.name_fa,
+      icon: row.icon,
+      appCount: Number(row.app_count ?? 0),
+    }),
   );
-}
 
-function DownloadIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className="h-5 w-5"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      aria-hidden="true"
-    >
-      <path d="M12 3v12" />
-      <path d="m7 10 5 5 5-5" />
-      <path d="M5 21h14" />
-    </svg>
-  );
-}
-
-export default function Home() {
-  const { isDark, mounted, toggleTheme } = useAppTheme();
-
-  function scrollToSection(sectionId: string) {
-    const element = document.getElementById(sectionId);
-
-    if (!element) {
-      return;
-    }
-
-    const headerOffset = 96;
-
-    const elementPosition =
-      element.getBoundingClientRect().top + window.scrollY;
-
-    const targetPosition =
-      elementPosition - headerOffset;
-
-    window.scrollTo({
-      top: targetPosition,
-      behavior: "smooth",
-    });
-
-    window.history.replaceState(
-      null,
-      "",
-      `#${sectionId}`,
-    );
-  }
-
-  function handleSectionClick(
-    event: MouseEvent<HTMLAnchorElement>,
-    sectionId: string,
-  ) {
-    event.preventDefault();
-    scrollToSection(sectionId);
-  }
+  const stats: HomeStats = {
+    publishedApps: Number(statsResult?.published_apps ?? 0),
+    outboundClicks: Number(statsResult?.outbound_clicks ?? 0),
+    activeCategories: Number(statsResult?.active_categories ?? 0),
+  };
 
   return (
-    <main
-      dir="rtl"
-      className={`min-h-screen transition-colors duration-300 ${
-        isDark
-          ? "bg-[#07120c] text-zinc-100"
-          : "bg-[#f7faf7] text-[#17211a]"
-      }`}
-    >
-      <motion.header
-        initial={{ opacity: 0, y: -14 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-        className={`sticky top-0 z-50 border-b backdrop-blur-xl transition-colors ${
-          isDark
-            ? "border-white/10 bg-[#07120c]/90"
-            : "border-emerald-950/10 bg-white/90"
-        }`}
-      >
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 lg:px-8">
-          <Link href="/" className="flex items-center gap-3">
-            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-700 text-xl font-black text-white shadow-lg shadow-emerald-900/20">
-              ا
-            </span>
-
-            <div>
-              <strong className="block text-xl font-black">
-                اپ‌خور
-              </strong>
-
-              <span
-                className={`text-xs ${
-                  isDark
-                    ? "text-zinc-400"
-                    : "text-zinc-500"
-                }`}
-              >
-                اپ‌های مفید، یک‌جا
-              </span>
-            </div>
-          </Link>
-
-          <nav
-            className={`hidden items-center gap-8 text-sm font-bold md:flex ${
-              isDark
-                ? "text-zinc-300"
-                : "text-zinc-600"
-            }`}
-          >
-            <Link
-              href="/"
-              className="text-emerald-500"
-            >
-              صفحه اصلی
-            </Link>
-
-            <Link
-              href="/categories"
-              className="transition hover:text-emerald-500"
-            >
-              دسته‌بندی‌ها
-            </Link>
-
-            <Link
-              href="/apps"
-              className="transition hover:text-emerald-500"
-            >
-              همه اپ‌ها
-            </Link>
-
-            <a
-              href="#about"
-              onClick={(event) =>
-                handleSectionClick(event, "about")
-              }
-              className="transition hover:text-emerald-500"
-            >
-              درباره ما
-            </a>
-          </nav>
-
-          <div className="flex items-center gap-2">
-            <motion.button
-              type="button"
-              onClick={toggleTheme}
-              whileHover={{ scale: 1.08, rotate: isDark ? -8 : 8 }}
-              whileTap={{ scale: 0.92 }}
-              transition={{ type: "spring", stiffness: 420, damping: 22 }}
-              aria-label="تغییر حالت نمایش"
-              title={
-                isDark
-                  ? "حالت روشن"
-                  : "حالت شب"
-              }
-              className={`flex h-11 w-11 items-center justify-center rounded-xl border text-lg transition ${
-                isDark
-                  ? "border-white/10 bg-white/5 hover:bg-white/10"
-                  : "border-zinc-200 bg-white hover:border-emerald-300 hover:bg-emerald-50"
-              }`}
-            >
-              {mounted
-                ? isDark
-                  ? "☀️"
-                  : "🌙"
-                : "🌙"}
-            </motion.button>
-
-            <motion.a
-              whileHover={{ y: -2, scale: 1.02 }}
-              whileTap={{ scale: 0.97 }}
-              href="https://reymit.ir/saeid_bjn"
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`hidden rounded-xl border px-4 py-2.5 text-sm font-bold transition sm:block ${
-                isDark
-                  ? "border-emerald-700/50 text-emerald-400 hover:bg-emerald-950"
-                  : "border-emerald-200 text-emerald-800 hover:bg-emerald-50"
-              }`}
-            >
-              حمایت مالی
-            </motion.a>
-
-            <AuthButton />
-          </div>
-        </div>
-      </motion.header>
-
-      <section
-        className={`relative overflow-hidden border-b ${
-          isDark
-            ? "border-white/10 bg-[#091810]"
-            : "border-emerald-950/10 bg-white"
-        }`}
-      >
-        <div className="absolute -left-32 top-10 h-72 w-72 rounded-full bg-emerald-500/10 blur-3xl" />
-        <div className="absolute -right-40 bottom-0 h-80 w-80 rounded-full bg-lime-500/10 blur-3xl" />
-
-        <div className="relative mx-auto grid max-w-7xl items-center gap-14 px-5 py-20 lg:grid-cols-[1.15fr_0.85fr] lg:px-8 lg:py-28">
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <div
-              className={`mb-6 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-bold ${
-                isDark
-                  ? "border-emerald-700/40 bg-emerald-950/60 text-emerald-400"
-                  : "border-emerald-200 bg-emerald-50 text-emerald-800"
-              }`}
-            >
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              مجموعه‌ای از ابزارهای کاربردی
-            </div>
-
-            <h1 className="max-w-3xl text-4xl font-black leading-[1.35] tracking-tight sm:text-5xl lg:text-6xl">
-              اپ‌های مفید را
-              <span className="text-emerald-600">
-                {" "}
-                پیدا کن، اجرا کن{" "}
-              </span>
-              و دانلود کن
-            </h1>
-
-            <p
-              className={`mt-6 max-w-2xl text-base leading-8 sm:text-lg ${
-                isDark
-                  ? "text-zinc-400"
-                  : "text-zinc-600"
-              }`}
-            >
-              اپ‌خور جایی برای معرفی و دانلود
-              اپلیکیشن‌ها و ابزارهای HTML تحت وب
-              است؛ ساده، سریع و بدون شلوغی‌های
-              اضافه.
-            </p>
-
-            <div
-              className={`mt-9 max-w-2xl rounded-2xl border p-2 shadow-2xl ${
-                isDark
-                  ? "border-white/10 bg-white/5 shadow-black/20"
-                  : "border-zinc-200 bg-white shadow-emerald-900/10"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <span
-                  className={`mr-3 ${
-                    isDark
-                      ? "text-zinc-500"
-                      : "text-zinc-400"
-                  }`}
-                >
-                  <SearchIcon />
-                </span>
-
-                <input
-                  type="search"
-                  placeholder="نام اپ یا ابزار موردنظرت را جست‌وجو کن..."
-                  className={`min-w-0 flex-1 bg-transparent px-1 py-3 text-sm outline-none sm:text-base ${
-                    isDark
-                      ? "text-white placeholder:text-zinc-600"
-                      : "text-zinc-900 placeholder:text-zinc-400"
-                  }`}
-                />
-
-                <motion.button
-                  type="button"
-                  whileHover={{ y: -2, scale: 1.025 }}
-                  whileTap={{ scale: 0.96 }}
-                  transition={{ type: "spring", stiffness: 420, damping: 24 }}
-                  className="rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-emerald-800"
-                >
-                  جست‌وجو
-                </motion.button>
-              </div>
-            </div>
-
-            <div
-              className={`mt-8 flex flex-wrap items-center gap-x-8 gap-y-4 text-sm ${
-                isDark
-                  ? "text-zinc-400"
-                  : "text-zinc-600"
-              }`}
-            >
-              <div>
-                <strong
-                  className={`ml-1 text-xl font-black ${
-                    isDark
-                      ? "text-white"
-                      : "text-zinc-900"
-                  }`}
-                >
-                  ۳۱+
-                </strong>
-                اپ کاربردی
-              </div>
-
-              <div>
-                <strong
-                  className={`ml-1 text-xl font-black ${
-                    isDark
-                      ? "text-white"
-                      : "text-zinc-900"
-                  }`}
-                >
-                  ۹K+
-                </strong>
-                دانلود موفق
-              </div>
-
-              <div>
-                <strong
-                  className={`ml-1 text-xl font-black ${
-                    isDark
-                      ? "text-white"
-                      : "text-zinc-900"
-                  }`}
-                >
-                  ۱۰۰٪
-                </strong>
-                فارسی
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 28, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.65, delay: 0.16, ease: [0.22, 1, 0.36, 1] }}
-            whileHover={{ y: -5 }}
-            className="relative mx-auto w-full max-w-lg"
-          >
-            <div className="absolute -inset-5 rounded-[2.5rem] bg-emerald-500/10 blur-2xl" />
-
-            <div
-              className={`relative rounded-[2rem] border p-5 shadow-2xl ${
-                isDark
-                  ? "border-white/10 bg-[#0d2116] shadow-black/30"
-                  : "border-emerald-100 bg-white shadow-emerald-900/10"
-              }`}
-            >
-              <div className="mb-5 flex items-center justify-between">
-                <div>
-                  <span className="text-xs font-bold text-emerald-500">
-                    پیشنهاد اپ‌خور
-                  </span>
-
-                  <h2 className="mt-1 text-xl font-black">
-                    ابزارهای محبوب هفته
-                  </h2>
-                </div>
-
-                <span
-                  className={`rounded-xl px-3 py-2 text-xs font-bold ${
-                    isDark
-                      ? "bg-emerald-950 text-emerald-400"
-                      : "bg-emerald-50 text-emerald-800"
-                  }`}
-                >
-                  به‌روز
-                </span>
-              </div>
-
-              <div className="space-y-3">
-                {apps.map((app, index) => (
-                  <motion.div
-                    key={app.name}
-                    initial={{ opacity: 0, x: 18 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{
-                      duration: 0.4,
-                      delay: 0.3 + index * 0.08,
-                    }}
-                    whileHover={{ x: -4, scale: 1.01 }}
-                    className={`flex items-center gap-4 rounded-2xl border p-4 ${
-                      isDark
-                        ? "border-white/5 bg-white/[0.03]"
-                        : "border-zinc-100 bg-[#fbfdfb]"
-                    }`}
-                  >
-                    <span
-                      className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-xl ${
-                        isDark
-                          ? "bg-emerald-950"
-                          : "bg-emerald-100"
-                      }`}
-                    >
-                      {app.icon}
-                    </span>
-
-                    <div className="min-w-0 flex-1">
-                      <strong className="block truncate text-sm">
-                        {app.name}
-                      </strong>
-
-                      <span className="mt-1 block text-xs text-zinc-500">
-                        {app.downloads} دانلود
-                      </span>
-                    </div>
-
-                    <span className="text-sm font-black text-emerald-500">
-                      {index + 1}
-                    </span>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      <section
-        id="categories"
-        className="mx-auto max-w-7xl px-5 py-20 lg:px-8"
-      >
-        <div className="mb-10 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-          <div>
-            <span className="text-sm font-bold text-emerald-600">
-              دسترسی سریع
-            </span>
-
-            <h2 className="mt-2 text-3xl font-black">
-              دسته‌بندی اپ‌ها
-            </h2>
-          </div>
-
-          <Link
-            href="/categories"
-            className="inline-flex items-center gap-2 text-sm font-bold text-emerald-600"
-          >
-            مشاهده همه دسته‌ها
-            <ArrowIcon />
-          </Link>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {categories.map((category) => (
-            <motion.a
-              href="#apps"
-              onClick={(event) =>
-                handleSectionClick(event, "apps")
-              }
-              key={category.name}
-              initial={{ opacity: 0, y: 18 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.25 }}
-              whileHover={{ y: -7, scale: 1.02 }}
-              whileTap={{ scale: 0.985 }}
-              transition={{ type: "spring", stiffness: 280, damping: 22 }}
-              className={`group rounded-2xl border p-5 transition hover:-translate-y-1 ${
-                isDark
-                  ? "border-white/10 bg-white/[0.03] hover:border-emerald-700"
-                  : "border-zinc-200 bg-white hover:border-emerald-300 hover:shadow-lg"
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <span
-                  className={`flex h-12 w-12 items-center justify-center rounded-2xl text-xl ${
-                    isDark
-                      ? "bg-emerald-950"
-                      : "bg-emerald-50"
-                  }`}
-                >
-                  {category.icon}
-                </span>
-
-                <span
-                  className={`transition group-hover:text-emerald-500 ${
-                    isDark
-                      ? "text-zinc-700"
-                      : "text-zinc-300"
-                  }`}
-                >
-                  <ArrowIcon />
-                </span>
-              </div>
-
-              <h3 className="mt-6 font-black">
-                {category.name}
-              </h3>
-
-              <p className="mt-2 text-sm text-zinc-500">
-                {category.count}
-              </p>
-            </motion.a>
-          ))}
-        </div>
-      </section>
-
-      <section
-        id="apps"
-        className={`border-y ${
-          isDark
-            ? "border-white/10 bg-[#091810]"
-            : "border-zinc-200 bg-white"
-        }`}
-      >
-        <div className="mx-auto max-w-7xl px-5 py-20 lg:px-8">
-          <div className="mb-10 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-            <div>
-              <span className="text-sm font-bold text-emerald-600">
-                تازه‌های اپ‌خور
-              </span>
-
-              <h2 className="mt-2 text-3xl font-black">
-                جدیدترین اپلیکیشن‌ها
-              </h2>
-            </div>
-
-            <Link
-              href="/apps"
-              className="inline-flex items-center gap-2 text-sm font-bold text-emerald-600"
-            >
-              مشاهده همه اپ‌ها
-              <ArrowIcon />
-            </Link>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {apps.map((app) => (
-              <motion.article
-                key={app.name}
-                initial={{ opacity: 0, y: 26, scale: 0.98 }}
-                whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                viewport={{ once: true, amount: 0.2 }}
-                whileHover={{ y: -8, scale: 1.015 }}
-                transition={{ type: "spring", stiffness: 230, damping: 22 }}
-                className={`group overflow-hidden rounded-3xl border transition-colors ${
-                  isDark
-                    ? "border-white/10 bg-white/[0.03] hover:border-emerald-700"
-                    : "border-zinc-200 bg-white hover:border-emerald-300 hover:shadow-xl"
-                }`}
-              >
-                <div className="p-6">
-                  <div className="flex items-start justify-between gap-4">
-                    <span
-                      className={`flex h-16 w-16 items-center justify-center rounded-2xl text-3xl ${
-                        isDark
-                          ? "bg-emerald-950"
-                          : "bg-emerald-50"
-                      }`}
-                    >
-                      {app.icon}
-                    </span>
-
-                    {app.featured && (
-                      <span
-                        className={`rounded-full px-3 py-1.5 text-xs font-bold ${
-                          isDark
-                            ? "bg-emerald-950 text-emerald-400"
-                            : "bg-emerald-100 text-emerald-800"
-                        }`}
-                      >
-                        پیشنهاد ویژه
-                      </span>
-                    )}
-                  </div>
-
-                  <span className="mt-6 block text-xs font-bold text-emerald-600">
-                    {app.category}
-                  </span>
-
-                  <h3 className="mt-2 text-xl font-black">
-                    {app.name}
-                  </h3>
-
-                  <p
-                    className={`mt-3 min-h-16 text-sm leading-7 ${
-                      isDark
-                        ? "text-zinc-400"
-                        : "text-zinc-600"
-                    }`}
-                  >
-                    {app.description}
-                  </p>
-
-                  <div
-                    className={`mt-6 grid grid-cols-3 divide-x divide-x-reverse rounded-2xl py-3 text-center ${
-                      isDark
-                        ? "divide-white/10 bg-white/[0.04]"
-                        : "divide-zinc-200 bg-zinc-50"
-                    }`}
-                  >
-                    <div>
-                      <span className="block text-xs text-zinc-500">
-                        نسخه
-                      </span>
-
-                      <strong className="mt-1 block text-xs">
-                        {app.version}
-                      </strong>
-                    </div>
-
-                    <div>
-                      <span className="block text-xs text-zinc-500">
-                        حجم
-                      </span>
-
-                      <strong className="mt-1 block text-xs">
-                        {app.size}
-                      </strong>
-                    </div>
-
-                    <div>
-                      <span className="block text-xs text-zinc-500">
-                        دانلود
-                      </span>
-
-                      <strong className="mt-1 block text-xs">
-                        {app.downloads}
-                      </strong>
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  className={`flex items-center gap-3 border-t p-4 ${
-                    isDark
-                      ? "border-white/10"
-                      : "border-zinc-100"
-                  }`}
-                >
-                  <motion.button
-                    type="button"
-                    whileHover={{ y: -2, scale: 1.015 }}
-                    whileTap={{ scale: 0.97 }}
-                    transition={{ type: "spring", stiffness: 420, damping: 24 }}
-                    className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-emerald-800"
-                  >
-                    مشاهده و دانلود
-                    <DownloadIcon />
-                  </motion.button>
-
-                  <motion.button
-                    type="button"
-                    whileHover={{ rotate: -8, scale: 1.08 }}
-                    whileTap={{ scale: 0.92 }}
-                    transition={{ type: "spring", stiffness: 420, damping: 22 }}
-                    aria-label={`مشاهده ${app.name}`}
-                    className={`flex h-11 w-11 items-center justify-center rounded-xl border transition hover:border-emerald-500 hover:text-emerald-500 ${
-                      isDark
-                        ? "border-white/10 text-zinc-400"
-                        : "border-zinc-200 text-zinc-500"
-                    }`}
-                  >
-                    <ArrowIcon />
-                  </motion.button>
-                </div>
-              </motion.article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section
-        id="about"
-        className="mx-auto max-w-7xl px-5 py-20 lg:px-8"
-      >
-        <motion.div
-          initial={{ opacity: 0, y: 28, scale: 0.985 }}
-          whileInView={{ opacity: 1, y: 0, scale: 1 }}
-          viewport={{ once: true, amount: 0.25 }}
-          whileHover={{ scale: 1.006 }}
-          transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-          className="relative overflow-hidden rounded-[2rem] bg-[#123c28] px-7 py-12 text-white shadow-2xl shadow-emerald-950/20 md:px-12"
-        >
-          <div className="absolute -left-20 -top-20 h-64 w-64 rounded-full border-[40px] border-white/5" />
-          <div className="absolute -bottom-28 right-12 h-64 w-64 rounded-full bg-emerald-500/10" />
-
-          <div className="relative flex flex-col justify-between gap-10 lg:flex-row lg:items-center">
-            <div className="max-w-2xl">
-              <span className="text-sm font-bold text-emerald-300">
-                همراه اپ‌خور باش
-              </span>
-
-              <h2 className="mt-3 text-3xl font-black leading-tight md:text-4xl">
-                حمایت تو باعث ساخت ابزارهای کاربردی
-                بیشتر می‌شود
-              </h2>
-
-              <p className="mt-5 leading-8 text-emerald-50/75">
-                اگر اپ‌خور برایت مفید بوده،
-                می‌توانی با یک حمایت کوچک به ادامه
-                توسعه سایت و اضافه‌شدن ابزارهای جدید
-                کمک کنی.
-              </p>
-            </div>
-
-            <motion.a
-              whileHover={{ y: -3, scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              transition={{ type: "spring", stiffness: 360, damping: 22 }}
-              href="https://reymit.ir/saeid_bjn"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-white px-7 py-4 font-black text-emerald-900 transition-colors hover:bg-emerald-50"
-            >
-              حمایت از اپ‌خور
-              <ArrowIcon />
-            </motion.a>
-          </div>
-        </motion.div>
-      </section>
-
-      <footer
-        className={`border-t ${
-          isDark
-            ? "border-white/10 bg-[#07120c]"
-            : "border-zinc-200 bg-white"
-        }`}
-      >
-        <div className="mx-auto grid max-w-7xl gap-10 px-5 py-12 md:grid-cols-3 lg:px-8">
-          <div>
-            <div className="flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-700 font-black text-white">
-                ا
-              </span>
-
-              <strong className="text-xl font-black">
-                اپ‌خور
-              </strong>
-            </div>
-
-            <p
-              className={`mt-4 max-w-sm text-sm leading-7 ${
-                isDark
-                  ? "text-zinc-500"
-                  : "text-zinc-500"
-              }`}
-            >
-              مرجعی ساده و فارسی برای معرفی، اجرای
-              آنلاین و دانلود اپلیکیشن‌ها و ابزارهای
-              کاربردی.
-            </p>
-          </div>
-
-          <div>
-            <strong className="font-black">
-              دسترسی سریع
-            </strong>
-
-            <div className="mt-4 flex flex-col gap-3 text-sm text-zinc-500">
-              <Link
-                href="/"
-                className="hover:text-emerald-600"
-              >
-                صفحه اصلی
-              </Link>
-
-              <a
-                href="#apps"
-                onClick={(event) =>
-                  handleSectionClick(
-                    event,
-                    "apps",
-                  )
-                }
-                className="hover:text-emerald-600"
-              >
-                همه اپ‌ها
-              </a>
-
-              <a
-                href="#categories"
-                onClick={(event) =>
-                  handleSectionClick(
-                    event,
-                    "categories",
-                  )
-                }
-                className="hover:text-emerald-600"
-              >
-                دسته‌بندی‌ها
-              </a>
-            </div>
-          </div>
-
-          <div>
-            <strong className="font-black">
-              مدیریت سایت
-            </strong>
-
-            <div className="mt-4 flex flex-col gap-3 text-sm text-zinc-500">
-              <AuthButton />
-
-              <a
-                href="https://reymit.ir/saeid_bjn"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-emerald-600"
-              >
-                حمایت مالی
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <div
-          className={`border-t ${
-            isDark
-              ? "border-white/10"
-              : "border-zinc-100"
-          }`}
-        >
-          <div className="mx-auto flex max-w-7xl flex-col gap-2 px-5 py-5 text-xs text-zinc-500 sm:flex-row sm:justify-between lg:px-8">
-            <span>
-              تمام حقوق برای اپ‌خور محفوظ است.
-            </span>
-
-            <span>
-              ساخته‌شده برای کاربران فارسی‌زبان
-            </span>
-          </div>
-        </div>
-      </footer>
-    </main>
+    <HomeClient
+      latestApps={latestApps}
+      popularApps={popularApps}
+      categories={categories}
+      stats={stats}
+    />
   );
 }
