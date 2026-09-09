@@ -1,0 +1,498 @@
+import { getCloudflareContext } from "@opennextjs/cloudflare";
+
+import { getSuperadminSession } from "@/lib/auth/get-superadmin-session";
+
+type AppLinkInput = {
+  platformId?: unknown;
+  labelFa?: unknown;
+  url?: unknown;
+  linkType?: unknown;
+  isPrimary?: unknown;
+  sortOrder?: unknown;
+};
+
+type ScreenshotInput = {
+  imageUrl?: unknown;
+  titleFa?: unknown;
+  altFa?: unknown;
+  sortOrder?: unknown;
+  isActive?: unknown;
+};
+
+type CreateAppBody = {
+  name?: unknown;
+  nameFa?: unknown;
+  slug?: unknown;
+  shortDescriptionFa?: unknown;
+  descriptionFa?: unknown;
+
+  logoUrl?: unknown;
+  websiteUrl?: unknown;
+  repositoryUrl?: unknown;
+
+  developerName?: unknown;
+  licenseName?: unknown;
+  searchKeywords?: unknown;
+
+  status?: unknown;
+  isFeatured?: unknown;
+  sortOrder?: unknown;
+
+  categoryIds?: unknown;
+  platformIds?: unknown;
+
+  links?: unknown;
+  screenshots?: unknown;
+};
+
+const VALID_STATUSES = new Set([
+  "DRAFT",
+  "PUBLISHED",
+  "ARCHIVED",
+]);
+
+const VALID_LINK_TYPES = new Set([
+  "DOWNLOAD",
+  "RUN",
+  "WEBSITE",
+  "SOURCE",
+  "DOCS",
+  "STORE",
+  "OTHER",
+]);
+
+function optionalString(value: unknown): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalized = value.trim();
+  return normalized || null;
+}
+
+function requiredString(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function normalizeStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return Array.from(
+    new Set(
+      value
+        .filter((item): item is string => typeof item === "string")
+        .map((item) => item.trim())
+        .filter(Boolean),
+    ),
+  );
+}
+
+function normalizeInteger(value: unknown, fallback = 0): number {
+  const numberValue =
+    typeof value === "number" ? value : Number(value);
+
+  if (!Number.isFinite(numberValue)) {
+    return fallback;
+  }
+
+  return Math.trunc(numberValue);
+}
+
+function isHttpUrl(value: string | null): boolean {
+  if (!value) {
+    return true;
+  }
+
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const session = await getSuperadminSession();
+
+    if (!session) {
+      return Response.json(
+        {
+          success: false,
+          message: "دسترسی غیرمجاز است.",
+        },
+        { status: 401 },
+      );
+    }
+
+    const body = (await request.json()) as CreateAppBody;
+
+    const name = requiredString(body.name);
+    const nameFa = optionalString(body.nameFa);
+    const slug = requiredString(body.slug).toLowerCase();
+
+    const shortDescriptionFa = requiredString(
+      body.shortDescriptionFa,
+    );
+
+    const descriptionFa = optionalString(body.descriptionFa);
+
+    const logoUrl = optionalString(body.logoUrl);
+    const websiteUrl = optionalString(body.websiteUrl);
+    const repositoryUrl = optionalString(body.repositoryUrl);
+
+    const developerName = optionalString(body.developerName);
+    const licenseName = optionalString(body.licenseName);
+    const searchKeywords = optionalString(body.searchKeywords);
+
+    const status =
+      typeof body.status === "string"
+        ? body.status.trim().toUpperCase()
+        : "DRAFT";
+
+    const isFeatured = body.isFeatured === true ? 1 : 0;
+    const sortOrder = normalizeInteger(body.sortOrder);
+
+    const categoryIds = normalizeStringArray(body.categoryIds);
+    const platformIds = normalizeStringArray(body.platformIds);
+
+    const rawLinks = Array.isArray(body.links)
+      ? (body.links as AppLinkInput[])
+      : [];
+
+    const rawScreenshots = Array.isArray(body.screenshots)
+      ? (body.screenshots as ScreenshotInput[])
+      : [];
+
+    if (!name) {
+      return Response.json(
+        {
+          success: false,
+          message: "نام انگلیسی اپ الزامی است.",
+        },
+        { status: 400 },
+      );
+    }
+
+    if (!slug) {
+      return Response.json(
+        {
+          success: false,
+          message: "Slug الزامی است.",
+        },
+        { status: 400 },
+      );
+    }
+
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
+      return Response.json(
+        {
+          success: false,
+          message:
+            "Slug فقط می‌تواند شامل حروف انگلیسی کوچک، عدد و خط تیره باشد.",
+        },
+        { status: 400 },
+      );
+    }
+
+    if (!shortDescriptionFa) {
+      return Response.json(
+        {
+          success: false,
+          message: "توضیح کوتاه فارسی الزامی است.",
+        },
+        { status: 400 },
+      );
+    }
+
+    if (!VALID_STATUSES.has(status)) {
+      return Response.json(
+        {
+          success: false,
+          message: "وضعیت اپ معتبر نیست.",
+        },
+        { status: 400 },
+      );
+    }
+
+    for (const [label, value] of [
+      ["لوگو", logoUrl],
+      ["وب‌سایت رسمی", websiteUrl],
+      ["مخزن پروژه", repositoryUrl],
+    ] as const) {
+      if (!isHttpUrl(value)) {
+        return Response.json(
+          {
+            success: false,
+            message: `آدرس ${label} معتبر نیست.`,
+          },
+          { status: 400 },
+        );
+      }
+    }
+
+    const links = rawLinks.map((item, index) => {
+      const labelFa = requiredString(item.labelFa);
+      const url = requiredString(item.url);
+      const linkType =
+        typeof item.linkType === "string"
+          ? item.linkType.trim().toUpperCase()
+          : "OTHER";
+
+      const platformId = optionalString(item.platformId);
+      const isPrimary = item.isPrimary === true ? 1 : 0;
+      const itemSortOrder = normalizeInteger(
+        item.sortOrder,
+        index * 10,
+      );
+
+      return {
+        id: crypto.randomUUID(),
+        platformId,
+        labelFa,
+        url,
+        linkType,
+        isPrimary,
+        sortOrder: itemSortOrder,
+      };
+    });
+
+    for (const link of links) {
+      if (!link.labelFa || !link.url) {
+        return Response.json(
+          {
+            success: false,
+            message:
+              "برای هر لینک رسمی، عنوان و آدرس الزامی است.",
+          },
+          { status: 400 },
+        );
+      }
+
+      if (!VALID_LINK_TYPES.has(link.linkType)) {
+        return Response.json(
+          {
+            success: false,
+            message: "نوع یکی از لینک‌های رسمی معتبر نیست.",
+          },
+          { status: 400 },
+        );
+      }
+
+      if (!isHttpUrl(link.url)) {
+        return Response.json(
+          {
+            success: false,
+            message: "یکی از لینک‌های رسمی معتبر نیست.",
+          },
+          { status: 400 },
+        );
+      }
+    }
+
+    const screenshots = rawScreenshots.map((item, index) => ({
+      id: crypto.randomUUID(),
+      imageUrl: requiredString(item.imageUrl),
+      titleFa: optionalString(item.titleFa),
+      altFa: optionalString(item.altFa),
+      sortOrder: normalizeInteger(item.sortOrder, index * 10),
+      isActive: item.isActive === false ? 0 : 1,
+    }));
+
+    for (const screenshot of screenshots) {
+      if (!screenshot.imageUrl || !isHttpUrl(screenshot.imageUrl)) {
+        return Response.json(
+          {
+            success: false,
+            message: "آدرس یکی از تصاویر معتبر نیست.",
+          },
+          { status: 400 },
+        );
+      }
+    }
+
+    const { env } = getCloudflareContext();
+
+    const existing = await env.appkhor_db
+      .prepare(
+        `SELECT id
+        FROM apps
+        WHERE slug = ?
+        LIMIT 1`,
+      )
+      .bind(slug)
+      .first<{ id: string }>();
+
+    if (existing) {
+      return Response.json(
+        {
+          success: false,
+          message: "این Slug قبلاً استفاده شده است.",
+        },
+        { status: 409 },
+      );
+    }
+
+    const appId = crypto.randomUUID();
+
+    const statements = [
+      env.appkhor_db
+        .prepare(
+          `INSERT INTO apps (
+            id,
+            slug,
+            name,
+            name_fa,
+            short_description_fa,
+            description_fa,
+            logo_url,
+            website_url,
+            repository_url,
+            developer_name,
+            license_name,
+            search_keywords,
+            status,
+            is_featured,
+            sort_order,
+            published_at
+          )
+          VALUES (
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+            CASE
+              WHEN ? = 'PUBLISHED' THEN CURRENT_TIMESTAMP
+              ELSE NULL
+            END
+          )`,
+        )
+        .bind(
+          appId,
+          slug,
+          name,
+          nameFa,
+          shortDescriptionFa,
+          descriptionFa,
+          logoUrl,
+          websiteUrl,
+          repositoryUrl,
+          developerName,
+          licenseName,
+          searchKeywords,
+          status,
+          isFeatured,
+          sortOrder,
+          status,
+        ),
+    ];
+
+    for (const categoryId of categoryIds) {
+      statements.push(
+        env.appkhor_db
+          .prepare(
+            `INSERT INTO app_categories (
+              app_id,
+              category_id
+            )
+            VALUES (?, ?)`,
+          )
+          .bind(appId, categoryId),
+      );
+    }
+
+    for (const platformId of platformIds) {
+      statements.push(
+        env.appkhor_db
+          .prepare(
+            `INSERT INTO app_platforms (
+              app_id,
+              platform_id
+            )
+            VALUES (?, ?)`,
+          )
+          .bind(appId, platformId),
+      );
+    }
+
+    for (const link of links) {
+      statements.push(
+        env.appkhor_db
+          .prepare(
+            `INSERT INTO app_links (
+              id,
+              app_id,
+              platform_id,
+              label_fa,
+              url,
+              link_type,
+              is_primary,
+              is_active,
+              sort_order
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)`,
+          )
+          .bind(
+            link.id,
+            appId,
+            link.platformId,
+            link.labelFa,
+            link.url,
+            link.linkType,
+            link.isPrimary,
+            link.sortOrder,
+          ),
+      );
+    }
+
+    for (const screenshot of screenshots) {
+      statements.push(
+        env.appkhor_db
+          .prepare(
+            `INSERT INTO app_screenshots (
+              id,
+              app_id,
+              image_url,
+              title_fa,
+              alt_fa,
+              sort_order,
+              is_active
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          )
+          .bind(
+            screenshot.id,
+            appId,
+            screenshot.imageUrl,
+            screenshot.titleFa,
+            screenshot.altFa,
+            screenshot.sortOrder,
+            screenshot.isActive,
+          ),
+      );
+    }
+
+    await env.appkhor_db.batch(statements);
+
+    return Response.json(
+      {
+        success: true,
+        message: "اپ با موفقیت ساخته شد.",
+        app: {
+          id: appId,
+          slug,
+        },
+      },
+      { status: 201 },
+    );
+  } catch (error) {
+    console.error("Create superadmin app error:", error);
+
+    return Response.json(
+      {
+        success: false,
+        message: "در ساخت اپ مشکلی پیش آمد.",
+      },
+      { status: 500 },
+    );
+  }
+}
