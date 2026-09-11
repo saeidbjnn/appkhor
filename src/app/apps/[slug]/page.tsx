@@ -97,6 +97,13 @@ type AppLinkRow = {
   platform_slug: string | null;
 };
 
+type ScreenshotRow = {
+  image_url: string;
+  title_fa: string | null;
+  alt_fa: string | null;
+  sort_order: number;
+};
+
 type RelatedRow = {
   id: string;
   slug: string;
@@ -241,7 +248,12 @@ export default async function AppDetailPage({ params }: PageProps) {
     publishedAt: row.published_at,
   };
 
-  const [categoriesResult, platformsResult, linksResult] = await Promise.all([
+  const [
+    categoriesResult,
+    platformsResult,
+    linksResult,
+    screenshotsResult,
+  ] = await Promise.all([
     env.appkhor_db
       .prepare(
         `SELECT
@@ -294,6 +306,21 @@ platforms.slug AS platform_slug
       )
       .bind(app.id)
       .all<AppLinkRow>(),
+
+    env.appkhor_db
+      .prepare(
+        `SELECT
+          image_url,
+          title_fa,
+          alt_fa,
+          sort_order
+        FROM app_screenshots
+        WHERE app_id = ?
+          AND is_active = 1
+        ORDER BY sort_order, created_at`,
+      )
+      .bind(app.id)
+      .all<ScreenshotRow>(),
   ]);
 
   const categories: AppCategory[] = (categoriesResult.results ?? []).map(
@@ -319,6 +346,18 @@ platforms.slug AS platform_slug
     platformName: link.platform_name_fa,
     platformSlug: link.platform_slug,
   }));
+
+  const dbScreenshots: AppScreenshot[] =
+    (screenshotsResult.results ?? []).map((screenshot) => ({
+      url: screenshot.image_url,
+      alt: screenshot.alt_fa || app.nameFa || app.name,
+      label: screenshot.title_fa || app.nameFa || app.name,
+    }));
+
+  const screenshots =
+    dbScreenshots.length > 0
+      ? dbScreenshots
+      : getScreenshots(app.slug);
 
   const categoryIds = categories.map((category) => category.id);
   let relatedApps: RelatedApp[] = [];
@@ -381,7 +420,7 @@ platforms.slug AS platform_slug
       categories={categories}
       platforms={platforms}
       links={links}
-      screenshots={getScreenshots(app.slug)}
+      screenshots={screenshots}
       highlights={getHighlights(app, platforms)}
       relatedApps={relatedApps}
     />

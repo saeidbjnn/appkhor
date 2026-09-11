@@ -18,6 +18,7 @@ import {
   Space,
   Switch,
   Typography,
+  Upload,
   theme,
 } from "antd";
 import type { MenuProps } from "antd";
@@ -115,6 +116,24 @@ const linkTypeOptions = [
   { value: "OTHER", label: "سایر" },
 ];
 
+function validateHttpUrl(_: unknown, value?: string) {
+  if (!value?.trim()) {
+    return Promise.resolve();
+  }
+
+  try {
+    const url = new URL(value.trim());
+
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      return Promise.reject(new Error("URL ????? ???? ??."));
+    }
+
+    return Promise.resolve();
+  } catch {
+    return Promise.reject(new Error("URL ????? ???? ??."));
+  }
+}
+
 export default function SuperadminAppForm({
   mode,
   email,
@@ -127,6 +146,48 @@ export default function SuperadminAppForm({
   const [form] = Form.useForm<AppFormValues>();
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
+
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingScreenshot, setUploadingScreenshot] =
+    useState<number | null>(null);
+
+  async function uploadMedia(
+    file: File,
+    kind: "LOGO" | "SCREENSHOT",
+  ): Promise<string> {
+    const formData = new FormData();
+
+    formData.append("file", file);
+    formData.append("kind", kind);
+
+    const response = await fetch("/api/superadmin/media", {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = (await response.json()) as {
+      success?: boolean;
+      message?: string;
+      asset?: {
+        url?: string;
+      };
+    };
+
+    if (!response.ok || !data.success || !data.asset?.url) {
+      throw new Error(
+        data.message ||
+          "\u0622\u067e\u0644\u0648\u062f \u062a\u0635\u0648\u06cc\u0631 \u0627\u0646\u062c\u0627\u0645 \u0646\u0634\u062f.",
+      );
+    }
+
+    const uploadedUrl = data.asset.url;
+
+    if (uploadedUrl.startsWith("/")) {
+      return window.location.origin + uploadedUrl;
+    }
+
+    return uploadedUrl;
+  }
 
   const isEdit = mode === "edit";
 
@@ -460,13 +521,64 @@ export default function SuperadminAppForm({
                         </Form.Item>
                       </div>
 
-                      <Form.Item
-                        label="آدرس لوگو"
-                        name="logoUrl"
-                        rules={[{ type: "url", message: "URL معتبر وارد کن." }]}
-                      >
-                        <Input dir="ltr" />
-                      </Form.Item>
+                        <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+                          <Form.Item
+                            label={"\u0622\u062f\u0631\u0633 \u0644\u0648\u06af\u0648"}
+                            name="logoUrl"
+                            rules={[
+                              {
+                                type: "url",
+                                message:
+                                  "\u0622\u062f\u0631\u0633 URL \u0645\u0639\u062a\u0628\u0631 \u0648\u0627\u0631\u062f \u06a9\u0646.",
+                              },
+                            ]}
+                            className="mb-0"
+                          >
+                            <Input
+                              dir="ltr"
+                              placeholder="https://..."
+                            />
+                          </Form.Item>
+
+                          <Upload
+                            accept="image/jpeg,image/png,image/webp,image/avif"
+                            showUploadList={false}
+                            customRequest={async ({
+                              file,
+                              onSuccess,
+                              onError,
+                            }) => {
+                              setUploadingLogo(true);
+                              setSaveError("");
+
+                              try {
+                                const url = await uploadMedia(
+                                  file as File,
+                                  "LOGO",
+                                );
+
+                                form.setFieldValue("logoUrl", url);
+                                onSuccess?.({});
+                              } catch (error) {
+                                const uploadError =
+                                  error instanceof Error
+                                    ? error
+                                    : new Error(
+                                        "\u0622\u067e\u0644\u0648\u062f \u0644\u0648\u06af\u0648 \u0627\u0646\u062c\u0627\u0645 \u0646\u0634\u062f.",
+                                      );
+
+                                setSaveError(uploadError.message);
+                                onError?.(uploadError);
+                              } finally {
+                                setUploadingLogo(false);
+                              }
+                            }}
+                          >
+                            <Button loading={uploadingLogo}>
+                              {"\u0622\u067e\u0644\u0648\u062f \u0644\u0648\u06af\u0648"}
+                            </Button>
+                          </Upload>
+                        </div>
                     </Card>
 
                     <Card
@@ -619,20 +731,80 @@ export default function SuperadminAppForm({
                                 key={key}
                                 className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4"
                               >
-                                <Form.Item
-                                  {...restField}
-                                  label="URL تصویر"
-                                  name={[name, "imageUrl"]}
-                                  rules={[
-                                    { required: true },
-                                    {
-                                      type: "url",
-                                      message: "URL معتبر وارد کن.",
-                                    },
-                                  ]}
-                                >
-                                  <Input dir="ltr" />
-                                </Form.Item>
+                                <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+                                  <Form.Item
+                                    {...restField}
+                                    label={"URL \u062a\u0635\u0648\u06cc\u0631"}
+                                    name={[name, "imageUrl"]}
+                                    rules={[
+                                      { required: true },
+                                      {
+                                        type: "url",
+                                        message:
+                                          "\u0622\u062f\u0631\u0633 URL \u0645\u0639\u062a\u0628\u0631 \u0648\u0627\u0631\u062f \u06a9\u0646.",
+                                      },
+                                    ]}
+                                    className="mb-0"
+                                  >
+                                    <Input
+                                      dir="ltr"
+                                      placeholder="https://..."
+                                    />
+                                  </Form.Item>
+
+                                  <Upload
+                                    accept="image/jpeg,image/png,image/webp,image/avif"
+                                    showUploadList={false}
+                                    customRequest={async ({
+                                      file,
+                                      onSuccess,
+                                      onError,
+                                    }) => {
+                                      setUploadingScreenshot(name);
+                                      setSaveError("");
+
+                                      try {
+                                        const url = await uploadMedia(
+                                          file as File,
+                                          "SCREENSHOT",
+                                        );
+
+                                        form.setFieldValue(
+                                          [
+                                            "screenshots",
+                                            name,
+                                            "imageUrl",
+                                          ],
+                                          url,
+                                        );
+
+                                        onSuccess?.({});
+                                      } catch (error) {
+                                        const uploadError =
+                                          error instanceof Error
+                                            ? error
+                                            : new Error(
+                                                "\u0622\u067e\u0644\u0648\u062f Screenshot \u0627\u0646\u062c\u0627\u0645 \u0646\u0634\u062f.",
+                                              );
+
+                                        setSaveError(
+                                          uploadError.message,
+                                        );
+                                        onError?.(uploadError);
+                                      } finally {
+                                        setUploadingScreenshot(null);
+                                      }
+                                    }}
+                                  >
+                                    <Button
+                                      loading={
+                                        uploadingScreenshot === name
+                                      }
+                                    >
+                                      {"\u0622\u067e\u0644\u0648\u062f \u062a\u0635\u0648\u06cc\u0631"}
+                                    </Button>
+                                  </Upload>
+                                </div>
 
                                 <div className="grid gap-x-3 md:grid-cols-2 xl:grid-cols-3">
                                   <Form.Item
