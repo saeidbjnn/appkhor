@@ -157,7 +157,7 @@ export default function AuthPage() {
   return (
     <main
       dir="rtl"
-      className="relative h-dvh overflow-hidden bg-[#082f23] px-4 py-4 text-zinc-900"
+      className="relative min-h-dvh overflow-x-hidden overflow-y-auto bg-[#082f23] px-4 py-4 text-zinc-900 lg:h-dvh lg:overflow-hidden"
     >
       {/* حباب‌های متحرک پس‌زمینه */}
       <div className="appkhor-bubble pointer-events-none absolute -left-16 top-14 h-44 w-44 rounded-full border border-emerald-100/15 bg-emerald-200/[0.035] shadow-[inset_0_0_55px_rgba(167,243,208,0.06)]" />
@@ -174,8 +174,8 @@ export default function AuthPage() {
 
       <div className="pointer-events-none absolute -bottom-40 -left-32 h-[30rem] w-[30rem] rounded-full bg-emerald-300/[0.04] blur-3xl" />
 
-      <div className="relative z-10 mx-auto flex h-full max-w-6xl items-center justify-center">
-        <div className="grid h-full max-h-[720px] w-full max-w-5xl overflow-hidden rounded-[2rem] border border-white/10 shadow-[0_30px_90px_-35px_rgba(0,0,0,0.38)] lg:grid-cols-2">
+      <div className="relative z-10 mx-auto flex min-h-[calc(100dvh-2rem)] max-w-6xl items-start justify-center lg:h-full lg:min-h-0 lg:items-center">
+        <div className="grid w-full max-w-5xl overflow-hidden rounded-[2rem] border border-white/10 shadow-[0_30px_90px_-35px_rgba(0,0,0,0.38)] lg:h-full lg:max-h-[720px] lg:grid-cols-2">
           {/* بخش معرفی + شفق */}
           <section className="relative hidden h-full min-h-0 overflow-hidden bg-[#e2ece4] p-10 text-[#173522] lg:flex lg:flex-col lg:justify-between">
             {/* شفق لایه‌ای */}
@@ -423,12 +423,12 @@ export default function AuthPage() {
           </section>
 
           {/* بخش فرم */}
-          <section className="relative h-full min-h-0 overflow-hidden bg-[#b7d4c0] p-5 sm:p-7 lg:p-8">
+          <section className="relative min-h-0 bg-[#b7d4c0] p-5 sm:p-7 lg:h-full lg:overflow-hidden lg:p-8">
             <div className="pointer-events-none absolute -left-20 -top-20 h-56 w-56 rounded-full bg-emerald-800/[0.045]" />
 
             <div className="pointer-events-none absolute -bottom-24 -right-20 h-64 w-64 rounded-full border-[38px] border-emerald-900/[0.04]" />
 
-            <div className="relative z-10 mx-auto flex h-full max-w-md flex-col justify-center">
+            <div className="relative z-10 mx-auto flex max-w-md flex-col py-2 lg:h-full lg:justify-center lg:py-0">
               <Link
                 href="/"
                 className="mb-5 inline-flex items-center gap-2 text-sm font-bold text-zinc-700 transition hover:text-emerald-800 lg:hidden"
