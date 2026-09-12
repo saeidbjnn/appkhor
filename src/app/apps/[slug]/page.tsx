@@ -118,62 +118,10 @@ type PageProps = {
   params: Promise<{ slug: string }>;
 };
 
-function getScreenshots(slug: string): AppScreenshot[] {
-  if (slug === "vlc") {
-    return [
-      {
-        url: "https://images.videolan.org/vlc/screenshots/3.0.0/3.0.17-windows11-fitted.jpg",
-        alt: "نمای VLC media player در ویندوز 11",
-        label: "VLC در ویندوز",
-      },
-      {
-        url: "https://images.videolan.org/vlc/screenshots/3.0.0/3.0-ubuntu-fitted.jpg",
-        alt: "نمای VLC media player در اوبونتو",
-        label: "VLC در لینوکس",
-      },
-      {
-        url: "https://images.videolan.org/vlc/screenshots/3.0.0/3.0.0_4k_windows_1.jpg",
-        alt: "نمای VLC media player هنگام پخش ویدیو در ویندوز",
-        label: "محیط پخش",
-      },
-    ];
-  }
-
-  return [];
-}
-
 function getHighlights(
   app: AppDetailData,
   platforms: AppPlatform[],
 ): AppHighlight[] {
-  if (app.slug === "vlc") {
-    return [
-      {
-        title: "پخش فرمت‌های متنوع",
-        description:
-          "برای پخش طیف بزرگی از فایل‌های صوتی و تصویری، دیسک‌ها و استریم‌ها طراحی شده است.",
-        icon: "▶",
-      },
-      {
-        title: "بدون نیاز به Codec Pack",
-        description:
-          "بسیاری از فرمت‌های رایج را بدون نصب بسته‌های کدک جداگانه پخش می‌کند.",
-        icon: "◫",
-      },
-      {
-        title: "چندپلتفرمی",
-        description: `در اپ‌خور برای ${platforms.length.toLocaleString("fa-IR")} پلتفرم فعال ثبت شده است.`,
-        icon: "⌘",
-      },
-      {
-        title: "آزاد و متن‌باز",
-        description:
-          "کد منبع پروژه در دسترس است و لینک مخزن رسمی آن از همین صفحه قابل دسترسی است.",
-        icon: "⌁",
-      },
-    ];
-  }
-
   const items: AppHighlight[] = [];
 
   if (platforms.length > 1) {
@@ -354,10 +302,7 @@ platforms.slug AS platform_slug
       label: screenshot.title_fa || app.nameFa || app.name,
     }));
 
-  const screenshots =
-    dbScreenshots.length > 0
-      ? dbScreenshots
-      : getScreenshots(app.slug);
+  const screenshots = dbScreenshots;
 
   const categoryIds = categories.map((category) => category.id);
   let relatedApps: RelatedApp[] = [];

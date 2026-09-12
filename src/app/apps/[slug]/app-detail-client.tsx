@@ -797,17 +797,6 @@ export default function AppDetailClient({
                   )}
                 </div>
 
-                {app.slug === "vlc" && (
-                  <div
-                    className={`mt-7 rounded-2xl border p-5 text-sm leading-8 ${
-                      isDark
-                        ? "border-emerald-800/30 bg-emerald-950/25 text-emerald-100/80"
-                        : "border-emerald-200 bg-emerald-50/75 text-emerald-950/75"
-                    }`}
-                  >
-                    VLC برای پخش فایل‌های چندرسانه‌ای، دیسک‌ها و استریم‌های شبکه ساخته شده و به‌خاطر پشتیبانی گسترده از فرمت‌ها، روی سیستم‌عامل‌های مختلف یکی از گزینه‌های شناخته‌شده این حوزه است.
-                  </div>
-                )}
               </motion.section>
 
               {highlights.length > 0 && (
