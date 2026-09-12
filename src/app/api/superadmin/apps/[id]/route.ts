@@ -93,6 +93,22 @@ function isHttpUrl(value: string | null): boolean {
   }
 }
 
+function mediaIdFromUrl(value: string | null): string | null {
+  if (!value) return null;
+
+  try {
+    const url = new URL(value, "https://appkhor.invalid");
+
+    const match = url.pathname.match(
+      /^\/media\/([0-9a-fA-F-]{36})$/,
+    );
+
+    return match?.[1] ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function PATCH(
   request: Request,
   context: {
@@ -261,13 +277,24 @@ export async function PATCH(
 
     const existingApp = await env.appkhor_db
       .prepare(
-        `SELECT id
+        `SELECT id, logo_url
         FROM apps
         WHERE id = ?
         LIMIT 1`,
       )
       .bind(appId)
-      .first<{ id: string }>();
+      .first<{ id: string; logo_url: string | null }>();
+
+    const existingScreenshotsResult =
+      await env.appkhor_db
+        .prepare(
+          `SELECT image_url
+          FROM app_screenshots
+          WHERE app_id = ?`,
+        )
+        .bind(appId)
+        .all<{ image_url: string }>();
+
 
     if (!existingApp) {
       return Response.json(
@@ -293,6 +320,54 @@ export async function PATCH(
         { status: 409 },
       );
     }
+
+    const oldMediaIds = new Set<string>();
+
+    const oldLogoMediaId = mediaIdFromUrl(
+      existingApp.logo_url,
+    );
+
+    if (oldLogoMediaId) {
+      oldMediaIds.add(oldLogoMediaId);
+    }
+
+    for (
+      const screenshot of
+      existingScreenshotsResult.results ?? []
+    ) {
+      const mediaId = mediaIdFromUrl(
+        screenshot.image_url,
+      );
+
+      if (mediaId) {
+        oldMediaIds.add(mediaId);
+      }
+    }
+
+    const newMediaIds = new Set<string>();
+
+    const newLogoMediaId = mediaIdFromUrl(logoUrl);
+
+    if (newLogoMediaId) {
+      newMediaIds.add(newLogoMediaId);
+    }
+
+    for (const screenshot of screenshots) {
+      const mediaId = mediaIdFromUrl(
+        screenshot.imageUrl,
+      );
+
+      if (mediaId) {
+        newMediaIds.add(mediaId);
+      }
+    }
+
+    const staleMediaIds = Array.from(
+      oldMediaIds,
+    ).filter(
+      (mediaId) => !newMediaIds.has(mediaId),
+    );
+
 
     const statements = [
       env.appkhor_db
@@ -443,6 +518,39 @@ export async function PATCH(
     }
 
     await env.appkhor_db.batch(statements);
+
+    try {
+      for (const mediaId of staleMediaIds) {
+        const mediaPath = `%/media/${mediaId}`;
+
+        await env.appkhor_db
+          .prepare(
+            `DELETE FROM media_assets
+            WHERE id = ?
+              AND NOT EXISTS (
+                SELECT 1
+                FROM apps
+                WHERE logo_url LIKE ?
+              )
+              AND NOT EXISTS (
+                SELECT 1
+                FROM app_screenshots
+                WHERE image_url LIKE ?
+              )`,
+          )
+          .bind(
+            mediaId,
+            mediaPath,
+            mediaPath,
+          )
+          .run();
+      }
+    } catch (cleanupError) {
+      console.error(
+        "Cleanup stale media assets failed:",
+        cleanupError,
+      );
+    }
 
     return Response.json({
       success: true,
