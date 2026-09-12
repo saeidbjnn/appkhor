@@ -150,6 +150,13 @@ export default function SuperadminAppForm({
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingScreenshot, setUploadingScreenshot] =
     useState<number | null>(null);
+  const [bulkScreenshotUploads, setBulkScreenshotUploads] =
+    useState(0);
+
+  const uploadsInProgress =
+    uploadingLogo ||
+    uploadingScreenshot !== null ||
+    bulkScreenshotUploads > 0;
 
   async function uploadMedia(
     file: File,
@@ -192,6 +199,13 @@ export default function SuperadminAppForm({
   const isEdit = mode === "edit";
 
   async function submit(values: AppFormValues) {
+    if (uploadsInProgress) {
+      setSaveError(
+        "\u0635\u0628\u0631 \u06a9\u0646 \u062a\u0627 \u0622\u067e\u0644\u0648\u062f \u062a\u0635\u0627\u0648\u06cc\u0631 \u062a\u0645\u0627\u0645 \u0634\u0648\u062f.",
+      );
+      return;
+    }
+
     if (isEdit && !appId) {
       setSaveError("شناسه اپ برای ویرایش موجود نیست.");
       return;
@@ -210,7 +224,15 @@ export default function SuperadminAppForm({
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(values),
+          body: JSON.stringify({
+            ...values,
+            screenshots: values.screenshots?.map(
+              (screenshot, index) => ({
+                ...screenshot,
+                sortOrder: index * 10,
+              }),
+            ),
+          }),
         },
       );
 
@@ -579,6 +601,44 @@ export default function SuperadminAppForm({
                             </Button>
                           </Upload>
                         </div>
+
+                        <Form.Item noStyle shouldUpdate>
+                          {({ getFieldValue }) => {
+                            const logoUrl = getFieldValue(
+                              "logoUrl",
+                            ) as string | undefined;
+
+                            if (!logoUrl) {
+                              return null;
+                            }
+
+                            return (
+                              <div
+                                data-media-preview="logo"
+                                className="mt-4 flex items-center gap-4 rounded-2xl border border-white/[0.08] bg-black/20 p-4"
+                              >
+                                <img
+                                  src={logoUrl}
+                                  alt=""
+                                  className="h-24 w-24 rounded-2xl object-contain"
+                                />
+
+                                <div className="min-w-0">
+                                  <Text strong>
+                                    {"\u067e\u06cc\u0634\u200c\u0646\u0645\u0627\u06cc\u0634 \u0644\u0648\u06af\u0648"}
+                                  </Text>
+
+                                  <div
+                                    dir="ltr"
+                                    className="mt-1 max-w-md truncate text-xs text-zinc-500"
+                                  >
+                                    {logoUrl}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          }}
+                        </Form.Item>
                     </Card>
 
                     <Card
@@ -724,8 +784,92 @@ export default function SuperadminAppForm({
                       styles={{ body: { padding: 22 } }}
                     >
                       <Form.List name="screenshots">
-                        {(fields, { add, remove }) => (
+                        {(fields, { add, remove, move }) => (
                           <div className="space-y-4">
+
+                            <div
+                              data-bulk-screenshot-upload="true"
+                              className="rounded-2xl border border-dashed border-white/[0.12] bg-white/[0.02] p-4"
+                            >
+                              <Space
+                                wrap
+                                className="w-full justify-between"
+                              >
+                                <div>
+                                  <Text strong>
+                                    {"\u0622\u067e\u0644\u0648\u062f \u0686\u0646\u062f\u062a\u0627\u06cc\u06cc Screenshot"}
+                                  </Text>
+
+                                  <div className="mt-1">
+                                    <Text type="secondary">
+                                      {"\u0686\u0646\u062f \u062a\u0635\u0648\u06cc\u0631 \u0631\u0627 \u0647\u0645\u200c\u0632\u0645\u0627\u0646 \u0627\u0646\u062a\u062e\u0627\u0628 \u06a9\u0646."}
+                                    </Text>
+                                  </div>
+                                </div>
+
+                                <Upload
+                                  multiple
+                                  accept="image/jpeg,image/png,image/webp,image/avif"
+                                  showUploadList={false}
+                                  customRequest={async ({
+                                    file,
+                                    onSuccess,
+                                    onError,
+                                  }) => {
+                                    setBulkScreenshotUploads(
+                                      (count) => count + 1,
+                                    );
+                                    setSaveError("");
+
+                                    try {
+                                      const typedFile = file as File;
+
+                                      const url = await uploadMedia(
+                                        typedFile,
+                                        "SCREENSHOT",
+                                      );
+
+                                      add({
+                                        imageUrl: url,
+                                        titleFa: typedFile.name.replace(
+                                          /\.[^.]+$/,
+                                          "",
+                                        ),
+                                        isActive: true,
+                                      });
+
+                                      onSuccess?.({});
+                                    } catch (error) {
+                                      const uploadError =
+                                        error instanceof Error
+                                          ? error
+                                          : new Error(
+                                              "\u0622\u067e\u0644\u0648\u062f Screenshot \u0627\u0646\u062c\u0627\u0645 \u0646\u0634\u062f.",
+                                            );
+
+                                      setSaveError(
+                                        uploadError.message,
+                                      );
+                                      onError?.(uploadError);
+                                    } finally {
+                                      setBulkScreenshotUploads(
+                                        (count) =>
+                                          Math.max(0, count - 1),
+                                      );
+                                    }
+                                  }}
+                                >
+                                  <Button
+                                    type="primary"
+                                    loading={
+                                      bulkScreenshotUploads > 0
+                                    }
+                                  >
+                                    {"\u0627\u0646\u062a\u062e\u0627\u0628 \u0686\u0646\u062f \u062a\u0635\u0648\u06cc\u0631"}
+                                  </Button>
+                                </Upload>
+                              </Space>
+                            </div>
                             {fields.map(({ key, name, ...restField }) => (
                               <div
                                 key={key}
@@ -806,6 +950,40 @@ export default function SuperadminAppForm({
                                   </Upload>
                                 </div>
 
+                                <Form.Item noStyle shouldUpdate>
+                                  {({ getFieldValue }) => {
+                                    const imageUrl = getFieldValue([
+                                      "screenshots",
+                                      name,
+                                      "imageUrl",
+                                    ]) as string | undefined;
+
+                                    if (!imageUrl) {
+                                      return null;
+                                    }
+
+                                    return (
+                                      <div
+                                        data-media-preview="screenshot"
+                                        className="mt-4 overflow-hidden rounded-2xl border border-white/[0.08] bg-black/20 p-3"
+                                      >
+                                        <img
+                                          src={imageUrl}
+                                          alt=""
+                                          className="aspect-[16/10] w-full rounded-xl object-cover"
+                                        />
+
+                                        <div
+                                          dir="ltr"
+                                          className="mt-2 truncate text-xs text-zinc-500"
+                                        >
+                                          {imageUrl}
+                                        </div>
+                                      </div>
+                                    );
+                                  }}
+                                </Form.Item>
+
                                 <div className="grid gap-x-3 md:grid-cols-2 xl:grid-cols-3">
                                   <Form.Item
                                     {...restField}
@@ -823,13 +1001,11 @@ export default function SuperadminAppForm({
                                     <Input />
                                   </Form.Item>
 
-                                  <Form.Item
-                                    {...restField}
-                                    label="ترتیب"
-                                    name={[name, "sortOrder"]}
-                                  >
-                                    <InputNumber min={0} className="w-full" />
-                                  </Form.Item>
+                                  <div className="mb-6 flex items-center">
+                                    <Text type="secondary">
+                                      {"\u062a\u0631\u062a\u06cc\u0628 \u0646\u0645\u0627\u06cc\u0634 \u0628\u0627 \u062f\u06a9\u0645\u0647\u200c\u0647\u0627\u06cc \u0628\u0627\u0644\u0627 \u0648 \u067e\u0627\u06cc\u06cc\u0646 \u062a\u0646\u0638\u06cc\u0645 \u0645\u06cc\u200c\u0634\u0648\u062f."}
+                                    </Text>
+                                  </div>
                                 </div>
 
                                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -845,9 +1021,28 @@ export default function SuperadminAppForm({
                                     />
                                   </Form.Item>
 
-                                  <Button danger onClick={() => remove(name)}>
-                                    حذف تصویر
-                                  </Button>
+                                  <Space wrap>
+                                    <Button
+                                      disabled={name === 0}
+                                      onClick={() => move(name, name - 1)}
+                                    >
+                                      {"\u2191 \u0628\u0627\u0644\u0627"}
+                                    </Button>
+
+                                    <Button
+                                      disabled={name === fields.length - 1}
+                                      onClick={() => move(name, name + 1)}
+                                    >
+                                      {"\u2193 \u067e\u0627\u06cc\u06cc\u0646"}
+                                    </Button>
+
+                                    <Button
+                                      danger
+                                      onClick={() => remove(name)}
+                                    >
+                                      {"\u062d\u0630\u0641 \u062a\u0635\u0648\u06cc\u0631"}
+                                    </Button>
+                                  </Space>
                                 </div>
                               </div>
                             ))}
@@ -905,6 +1100,15 @@ export default function SuperadminAppForm({
                       </div>
                     )}
 
+                    {uploadsInProgress && (
+                      <div
+                        data-upload-status="true"
+                        className="rounded-2xl border border-amber-800/30 bg-amber-950/20 px-4 py-3 text-sm text-amber-300"
+                      >
+                        {"\u0622\u067e\u0644\u0648\u062f \u062a\u0635\u0627\u0648\u06cc\u0631 \u062f\u0631 \u062d\u0627\u0644 \u0627\u0646\u062c\u0627\u0645 \u0627\u0633\u062a\u061b \u067e\u0633 \u0627\u0632 \u062a\u0645\u0627\u0645 \u0634\u062f\u0646 \u0622\u067e\u0644\u0648\u062f \u0641\u0631\u0645 \u0631\u0627 \u0630\u062e\u06cc\u0631\u0647 \u06a9\u0646."}
+                      </div>
+                    )}
+
                     <div className="sticky bottom-4 z-10 flex flex-wrap justify-end gap-3 rounded-2xl border border-white/[0.08] bg-[#0b1710]/95 p-4 shadow-2xl shadow-black/30 backdrop-blur-xl">
                       <Button
                         size="large"
@@ -918,6 +1122,7 @@ export default function SuperadminAppForm({
                         type="primary"
                         size="large"
                         loading={saving}
+                        disabled={uploadsInProgress}
                         onClick={() => form.submit()}
                       >
                         {isEdit ? "ذخیره تغییرات" : "ثبت اپ"}
