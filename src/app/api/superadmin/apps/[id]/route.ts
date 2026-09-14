@@ -24,6 +24,7 @@ type UpdateAppBody = {
 };
 
 type AppLinkInput = {
+  id?: unknown;
   platformId?: unknown;
   labelFa?: unknown;
   url?: unknown;
@@ -207,7 +208,7 @@ export async function PATCH(
       : [];
 
     const links = rawLinks.map((item, index) => ({
-      id: crypto.randomUUID(),
+      id: optionalString(item.id),
       platformId: optionalString(item.platformId),
       labelFa: requiredString(item.labelFa),
       url: requiredString(item.url),
@@ -295,6 +296,16 @@ export async function PATCH(
         .bind(appId)
         .all<{ image_url: string }>();
 
+    const existingLinksResult =
+      await env.appkhor_db
+        .prepare(
+          `SELECT id
+          FROM app_links
+          WHERE app_id = ?`,
+        )
+        .bind(appId)
+        .all<{ id: string }>();
+
 
     if (!existingApp) {
       return Response.json(
@@ -369,6 +380,20 @@ export async function PATCH(
     );
 
 
+    const existingLinkIds = new Set(
+      (existingLinksResult.results ?? []).map(
+        (item) => item.id,
+      ),
+    );
+
+    const normalizedLinks = links.map((link) => ({
+      ...link,
+      id:
+        link.id && existingLinkIds.has(link.id)
+          ? link.id
+          : crypto.randomUUID(),
+    }));
+
     const statements = [
       env.appkhor_db
         .prepare(
@@ -424,7 +449,13 @@ export async function PATCH(
         .bind(appId),
 
       env.appkhor_db
-        .prepare(`DELETE FROM app_links WHERE app_id = ?`)
+        .prepare(
+          `UPDATE app_links
+          SET
+            is_active = 0,
+            updated_at = CURRENT_TIMESTAMP
+          WHERE app_id = ?`,
+        )
         .bind(appId),
 
       env.appkhor_db
@@ -460,7 +491,7 @@ export async function PATCH(
       );
     }
 
-    for (const link of links) {
+    for (const link of normalizedLinks) {
       statements.push(
         env.appkhor_db
           .prepare(
@@ -475,7 +506,16 @@ export async function PATCH(
               is_active,
               sort_order
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)`,
+            VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)
+            ON CONFLICT(id) DO UPDATE SET
+              platform_id = excluded.platform_id,
+              label_fa = excluded.label_fa,
+              url = excluded.url,
+              link_type = excluded.link_type,
+              is_primary = excluded.is_primary,
+              is_active = 1,
+              sort_order = excluded.sort_order,
+              updated_at = CURRENT_TIMESTAMP`,
           )
           .bind(
             link.id,

@@ -40,6 +40,7 @@ export type PlatformOption = {
 };
 
 type LinkFormValue = {
+  id?: string;
   platformId?: string;
   labelFa: string;
   url: string;

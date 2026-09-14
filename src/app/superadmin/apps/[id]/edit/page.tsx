@@ -43,6 +43,7 @@ type SelectedIdRow = {
 };
 
 type LinkRow = {
+  id: string;
   platform_id: string | null;
   label_fa: string;
   url: string;
@@ -159,6 +160,7 @@ export default async function EditSuperadminAppPage({
     env.appkhor_db
       .prepare(
         `SELECT
+          id,
           platform_id,
           label_fa,
           url,
@@ -233,6 +235,7 @@ export default async function EditSuperadminAppPage({
     ),
 
     links: (linksResult.results ?? []).map((item) => ({
+      id: item.id,
       platformId: item.platform_id ?? undefined,
       labelFa: item.label_fa,
       url: item.url,
