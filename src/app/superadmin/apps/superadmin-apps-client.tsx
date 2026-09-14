@@ -93,17 +93,14 @@ export default function SuperadminAppsClient({
     {
       key: "categories",
       label: "دسته‌بندی‌ها",
-      disabled: true,
     },
     {
       key: "platforms",
       label: "پلتفرم‌ها",
-      disabled: true,
     },
     {
       key: "links",
       label: "لینک‌های رسمی",
-      disabled: true,
     },
   ];
 
@@ -370,6 +367,20 @@ export default function SuperadminAppsClient({
 
                   if (key === "apps") {
                     router.push("/superadmin/apps");
+                    return;
+                  }
+
+                  if (key === "categories") {
+                    router.push("/superadmin/categories");
+                    return;
+                  }
+
+                  if (key === "platforms") {
+                    router.push("/superadmin/platforms");
+                  }
+
+                  if (key === "links") {
+                    router.push("/superadmin/links");
                   }
                 }}
               />

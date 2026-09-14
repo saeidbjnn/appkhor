@@ -33,7 +33,7 @@ export default function VerifyEmailPage() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
-const [isEntering, setIsEntering] = useState(false);
+const [isEntering] = useState(false);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const emailFromUrl = params.get("email");

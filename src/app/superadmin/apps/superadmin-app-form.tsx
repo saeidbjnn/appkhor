@@ -39,7 +39,7 @@ export type PlatformOption = {
   name: string;
 };
 
-export type LinkFormValue = {
+type LinkFormValue = {
   platformId?: string;
   labelFa: string;
   url: string;
@@ -55,7 +55,7 @@ export type LinkFormValue = {
   sortOrder?: number;
 };
 
-export type ScreenshotFormValue = {
+type ScreenshotFormValue = {
   imageUrl: string;
   titleFa?: string;
   altFa?: string;
@@ -115,24 +115,6 @@ const linkTypeOptions = [
   { value: "STORE", label: "فروشگاه" },
   { value: "OTHER", label: "سایر" },
 ];
-
-function validateHttpUrl(_: unknown, value?: string) {
-  if (!value?.trim()) {
-    return Promise.resolve();
-  }
-
-  try {
-    const url = new URL(value.trim());
-
-    if (url.protocol !== "http:" && url.protocol !== "https:") {
-      return Promise.reject(new Error("URL ????? ???? ??."));
-    }
-
-    return Promise.resolve();
-  } catch {
-    return Promise.reject(new Error("URL ????? ???? ??."));
-  }
-}
 
 export default function SuperadminAppForm({
   mode,

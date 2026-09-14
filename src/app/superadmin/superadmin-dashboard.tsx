@@ -41,17 +41,14 @@ const menuItems: MenuProps["items"] = [
   {
     key: "categories",
     label: "دسته‌بندی‌ها",
-    disabled: true,
   },
   {
     key: "platforms",
     label: "پلتفرم‌ها",
-    disabled: true,
   },
   {
     key: "links",
     label: "لینک‌های رسمی",
-    disabled: true,
   },
 ];
 
@@ -345,17 +342,13 @@ export default function SuperadminDashboard({
                         </Button>
                       </Tooltip>
 
-                      <Tooltip title="مدیریت دسته‌بندی‌ها هنوز ساخته نشده">
-                        <Button block disabled>
-                          دسته‌بندی‌ها
-                        </Button>
-                      </Tooltip>
+                      <Button block href="/superadmin/categories">
+                        {"\u062f\u0633\u062a\u0647\u200c\u0628\u0646\u062f\u06cc\u200c\u0647\u0627"}
+                      </Button>
 
-                      <Tooltip title="مدیریت پلتفرم‌ها هنوز ساخته نشده">
-                        <Button block disabled>
-                          پلتفرم‌ها
-                        </Button>
-                      </Tooltip>
+                      <Button block href="/superadmin/platforms">
+                        {"\u067e\u0644\u062a\u0641\u0631\u0645\u200c\u0647\u0627"}
+                      </Button>
                     </Space>
                   </Card>
                 </section>

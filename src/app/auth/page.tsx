@@ -34,7 +34,7 @@ export default function AuthPage() {
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isEntering, setIsEntering] = useState(false);
+  const [isEntering] = useState(false);
   const passwordChecks = {
   minLength: password.length >= 8,
   maxLength: password.length <= 128,
