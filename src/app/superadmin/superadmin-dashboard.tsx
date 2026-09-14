@@ -57,6 +57,10 @@ const menuItems: MenuProps["items"] = [
     label: "\u06a9\u0627\u0631\u0628\u0631\u0627\u0646",
   },
   {
+    key: "media",
+    label: "\u0631\u0633\u0627\u0646\u0647\u200c\u0647\u0627",
+  },
+  {
     key: "audit",
     label: "\u06af\u0632\u0627\u0631\u0634 \u062a\u063a\u06cc\u06cc\u0631\u0627\u062a",
   },
@@ -68,24 +72,64 @@ export default function SuperadminDashboard({
 }: SuperadminDashboardProps) {
   const statItems = [
     {
-      title: "کل اپ‌ها",
+      title: "\u06a9\u0644 \u0627\u067e\u200c\u0647\u0627",
       value: stats.apps,
-      hint: "همه وضعیت‌ها",
+      hint: "\u0647\u0645\u0647 \u0648\u0636\u0639\u06cc\u062a\u200c\u0647\u0627",
     },
     {
-      title: "منتشرشده",
+      title: "\u0645\u0646\u062a\u0634\u0631\u0634\u062f\u0647",
       value: stats.publishedApps,
-      hint: "نمایش عمومی",
+      hint: "\u0642\u0627\u0628\u0644 \u0646\u0645\u0627\u06cc\u0634 \u0639\u0645\u0648\u0645\u06cc",
     },
     {
-      title: "دسته‌بندی‌ها",
+      title: "\u067e\u06cc\u0634\u200c\u0646\u0648\u06cc\u0633",
+      value: stats.draftApps,
+      hint: "\u0647\u0646\u0648\u0632 \u0645\u0646\u062a\u0634\u0631 \u0646\u0634\u062f\u0647",
+    },
+    {
+      title: "\u062f\u0633\u062a\u0647\u200c\u0628\u0646\u062f\u06cc\u200c\u0647\u0627",
       value: stats.categories,
-      hint: "ثبت‌شده در D1",
+      hint: "\u06a9\u0644 \u062f\u0633\u062a\u0647\u200c\u0647\u0627",
     },
     {
-      title: "کلیک خروجی",
+      title: "\u067e\u0644\u062a\u0641\u0631\u0645\u200c\u0647\u0627",
+      value: stats.platforms,
+      hint: "\u067e\u0644\u062a\u0641\u0631\u0645\u200c\u0647\u0627\u06cc \u062b\u0628\u062a\u200c\u0634\u062f\u0647",
+    },
+    {
+      title: "\u06a9\u0627\u0631\u0628\u0631\u0627\u0646",
+      value: stats.users,
+      hint: "\u0628\u062f\u0648\u0646 \u062d\u0633\u0627\u0628\u200c\u0647\u0627\u06cc \u062d\u0630\u0641\u200c\u0634\u062f\u0647",
+    },
+    {
+      title: "\u06a9\u0627\u0631\u0628\u0631\u0627\u0646 \u0641\u0639\u0627\u0644",
+      value: stats.activeUsers,
+      hint: "\u0648\u0636\u0639\u06cc\u062a ACTIVE",
+    },
+    {
+      title: "\u0644\u06cc\u0646\u06a9\u200c\u0647\u0627\u06cc \u0641\u0639\u0627\u0644",
+      value: stats.activeLinks,
+      hint: "\u0645\u0642\u0635\u062f\u0647\u0627\u06cc \u0642\u0627\u0628\u0644 \u0627\u0633\u062a\u0641\u0627\u062f\u0647",
+    },
+    {
+      title: "\u06a9\u0644 \u06a9\u0644\u06cc\u06a9\u200c\u0647\u0627",
       value: stats.outboundClicks,
-      hint: "کل ارجاع‌ها",
+      hint: "\u06a9\u0644 \u0627\u0631\u062c\u0627\u0639\u200c\u0647\u0627\u06cc \u062e\u0631\u0648\u062c\u06cc",
+    },
+    {
+      title: "\u06a9\u0644\u06cc\u06a9 \u0627\u0645\u0631\u0648\u0632",
+      value: stats.clicksToday,
+      hint: "\u0627\u0632 \u0634\u0631\u0648\u0639 \u0631\u0648\u0632 UTC",
+    },
+    {
+      title: "\u0631\u0633\u0627\u0646\u0647\u200c\u0647\u0627",
+      value: stats.mediaAssets,
+      hint: "\u06a9\u0644 \u0641\u0627\u06cc\u0644\u200c\u0647\u0627\u06cc D1",
+    },
+    {
+      title: "\u0631\u0633\u0627\u0646\u0647 \u0628\u062f\u0648\u0646 \u0645\u0631\u062c\u0639",
+      value: stats.orphanMediaAssets,
+      hint: "\u0646\u06cc\u0627\u0632\u0645\u0646\u062f \u0628\u0631\u0631\u0633\u06cc",
     },
   ];
 
@@ -168,6 +212,11 @@ export default function SuperadminDashboard({
                 items={menuItems}
                 className="flex-1 border-none bg-transparent px-1"
                 onClick={({ key }) => {
+                  if (key === "media") {
+                    window.location.href = "/superadmin/media";
+                    return;
+                  }
+
                   if (key === "dashboard") {
                     window.location.href = "/superadmin";
                     return;

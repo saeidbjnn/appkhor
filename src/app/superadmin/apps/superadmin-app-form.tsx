@@ -112,6 +112,10 @@ const menuItems: MenuProps["items"] = [
     label: "\u06a9\u0627\u0631\u0628\u0631\u0627\u0646",
   },
   {
+    key: "media",
+    label: "\u0631\u0633\u0627\u0646\u0647\u200c\u0647\u0627",
+  },
+  {
     key: "audit",
     label: "\u06af\u0632\u0627\u0631\u0634 \u062a\u063a\u06cc\u06cc\u0631\u0627\u062a",
   },
@@ -334,6 +338,11 @@ export default function SuperadminAppForm({
                 items={menuItems}
                 className="flex-1 border-none bg-transparent px-1"
                 onClick={({ key }) => {
+                  if (key === "media") {
+                    window.location.href = "/superadmin/media";
+                    return;
+                  }
+
                   if (key === "dashboard") {
                     router.push("/superadmin");
                     return;
