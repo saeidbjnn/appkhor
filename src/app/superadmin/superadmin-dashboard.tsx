@@ -21,6 +21,8 @@ import type { MenuProps } from "antd";
 
 import type { SuperadminStats } from "./page";
 
+import SuperadminLogoutButton from "@/app/superadmin/superadmin-logout-button";
+
 const { Header, Sider, Content } = Layout;
 const { Title, Text } = Typography;
 
@@ -49,6 +51,14 @@ const menuItems: MenuProps["items"] = [
   {
     key: "links",
     label: "لینک‌های رسمی",
+  },
+  {
+    key: "users",
+    label: "\u06a9\u0627\u0631\u0628\u0631\u0627\u0646",
+  },
+  {
+    key: "audit",
+    label: "\u06af\u0632\u0627\u0631\u0634 \u062a\u063a\u06cc\u06cc\u0631\u0627\u062a",
   },
 ];
 
@@ -166,6 +176,14 @@ export default function SuperadminDashboard({
                   if (key === "apps") {
                     window.location.href = "/superadmin/apps";
                   }
+
+                  if (key === "users") {
+                    window.location.href = "/superadmin/users";
+                  }
+
+                  if (key === "audit") {
+                    window.location.href = "/superadmin/audit";
+                  }
                 }}
               />
 
@@ -190,6 +208,10 @@ export default function SuperadminDashboard({
                   </div>
                 </div>
               </div>
+              <div className="px-4 pb-4">
+                <SuperadminLogoutButton />
+              </div>
+
             </div>
           </Sider>
 

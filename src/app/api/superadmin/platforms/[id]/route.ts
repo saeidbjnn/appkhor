@@ -99,13 +99,26 @@ export async function PATCH(
 
     const existing = await env.appkhor_db
       .prepare(
-        `SELECT id
+        `SELECT
+          id,
+          slug,
+          name_fa,
+          icon,
+          sort_order,
+          is_active
         FROM platforms
         WHERE id = ?
         LIMIT 1`,
       )
       .bind(platformId)
-      .first<{ id: string }>();
+      .first<{
+        id: string;
+        slug: string;
+        name_fa: string;
+        icon: string | null;
+        sort_order: number;
+        is_active: number;
+      }>();
 
     if (!existing) {
       return Response.json(
@@ -138,27 +151,67 @@ export async function PATCH(
       );
     }
 
-    await env.appkhor_db
-      .prepare(
-        `UPDATE platforms
-        SET
-          slug = ?,
-          name_fa = ?,
-          icon = ?,
-          sort_order = ?,
-          is_active = ?,
-          updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?`,
-      )
-      .bind(
-        slug,
-        nameFa,
-        icon,
-        sortOrder,
-        isActive,
-        platformId,
-      )
-      .run();
+    await env.appkhor_db.batch([
+      env.appkhor_db
+        .prepare(
+          `UPDATE platforms
+          SET
+            slug = ?,
+            name_fa = ?,
+            icon = ?,
+            sort_order = ?,
+            is_active = ?,
+            updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?`,
+        )
+        .bind(
+          slug,
+          nameFa,
+          icon,
+          sortOrder,
+          isActive,
+          platformId,
+        ),
+
+      env.appkhor_db
+        .prepare(
+          `INSERT INTO audit_logs (
+            id,
+            actor_user_id,
+            action,
+            target_type,
+            target_id,
+            old_value,
+            new_value,
+            metadata
+          )
+          VALUES (?, NULL, ?, ?, ?, ?, ?, ?)`,
+        )
+        .bind(
+          crypto.randomUUID(),
+          "SUPERADMIN_PLATFORM_UPDATE",
+          "PLATFORM",
+          platformId,
+          JSON.stringify({
+            slug: existing.slug,
+            nameFa: existing.name_fa,
+            icon: existing.icon,
+            sortOrder: existing.sort_order,
+            isActive:
+              existing.is_active === 1,
+          }),
+          JSON.stringify({
+            slug,
+            nameFa,
+            icon,
+            sortOrder,
+            isActive: isActive === 1,
+          }),
+          JSON.stringify({
+            superadminEmail: session.email,
+          }),
+        ),
+    ]);
 
     return Response.json({
       success: true,

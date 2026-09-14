@@ -47,6 +47,8 @@ import type {
 
 import type { SuperadminCategoryRow } from "./page";
 
+import SuperadminLogoutButton from "@/app/superadmin/superadmin-logout-button";
+
 const { Header, Sider, Content } = Layout;
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -114,6 +116,14 @@ export default function SuperadminCategoriesClient({
     { key: "categories", label: "\u062f\u0633\u062a\u0647\u200c\u0628\u0646\u062f\u06cc\u200c\u0647\u0627" },
     { key: "platforms", label: "\u067e\u0644\u062a\u0641\u0631\u0645\u200c\u0647\u0627" },
     { key: "links", label: "\u0644\u06cc\u0646\u06a9\u200c\u0647\u0627\u06cc \u0631\u0633\u0645\u06cc" },
+  {
+    key: "users",
+    label: "\u06a9\u0627\u0631\u0628\u0631\u0627\u0646",
+  },
+  {
+    key: "audit",
+    label: "\u06af\u0632\u0627\u0631\u0634 \u062a\u063a\u06cc\u06cc\u0631\u0627\u062a",
+  },
   ];
 
   const filteredCategories = useMemo(() => {
@@ -360,6 +370,14 @@ export default function SuperadminCategoriesClient({
                   if (key === "links") {
                     router.push("/superadmin/links");
                   }
+
+                  if (key === "users") {
+                    router.push("/superadmin/users");
+                  }
+
+                  if (key === "audit") {
+                    router.push("/superadmin/audit");
+                  }
                 }}
               />
 
@@ -384,6 +402,10 @@ export default function SuperadminCategoriesClient({
                   </div>
                 </div>
               </div>
+              <div className="px-4 pb-4">
+                <SuperadminLogoutButton />
+              </div>
+
             </div>
           </Sider>
 

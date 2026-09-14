@@ -15,6 +15,7 @@ import {
   Menu,
   Select,
   Space,
+  Switch,
   Table,
   Tag,
   Typography,
@@ -27,6 +28,8 @@ import type {
 } from "antd";
 
 import type { SuperadminLinkRow } from "./page";
+
+import SuperadminLogoutButton from "@/app/superadmin/superadmin-logout-button";
 
 const { Header, Sider, Content } = Layout;
 const { Title, Text } = Typography;
@@ -66,6 +69,11 @@ export default function SuperadminLinksClient({
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] =
     useState<string>("ALL");
+
+  const [updatingLinkId, setUpdatingLinkId] =
+    useState<string | null>(null);
+  const [linkStatusError, setLinkStatusError] =
+    useState("");
   const [statusFilter, setStatusFilter] =
     useState<string>("ALL");
 
@@ -93,6 +101,14 @@ export default function SuperadminLinksClient({
       label:
         "\u0644\u06cc\u0646\u06a9\u200c\u0647\u0627\u06cc \u0631\u0633\u0645\u06cc",
     },
+  {
+    key: "users",
+    label: "\u06a9\u0627\u0631\u0628\u0631\u0627\u0646",
+  },
+  {
+    key: "audit",
+    label: "\u06af\u0632\u0627\u0631\u0634 \u062a\u063a\u06cc\u06cc\u0631\u0627\u062a",
+  },
   ];
 
   const filteredLinks = useMemo(() => {
@@ -136,6 +152,57 @@ export default function SuperadminLinksClient({
     typeFilter,
     statusFilter,
   ]);
+
+  const activeLinksCount = links.filter(
+    (link) => link.isActive,
+  ).length;
+
+  const totalClicks = links.reduce(
+    (total, link) => total + link.clickCount,
+    0,
+  );
+
+  async function updateLinkStatus(
+    linkId: string,
+    isActive: boolean,
+  ) {
+    setUpdatingLinkId(linkId);
+    setLinkStatusError("");
+
+    try {
+      const response = await fetch(
+        `/api/superadmin/links/${linkId}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ isActive }),
+        },
+      );
+
+      const data = (await response.json()) as {
+        success?: boolean;
+        message?: string;
+      };
+
+      if (!response.ok || !data.success) {
+        setLinkStatusError(
+          data.message ||
+            "\u062a\u063a\u06cc\u06cc\u0631 \u0648\u0636\u0639\u06cc\u062a \u0644\u06cc\u0646\u06a9 \u0627\u0646\u062c\u0627\u0645 \u0646\u0634\u062f.",
+        );
+        return;
+      }
+
+      router.refresh();
+    } catch {
+      setLinkStatusError(
+        "\u062f\u0631 \u0627\u0631\u062a\u0628\u0627\u0637 \u0628\u0627 \u0633\u0631\u0648\u0631 \u0645\u0634\u06a9\u0644\u06cc \u067e\u06cc\u0634 \u0622\u0645\u062f.",
+      );
+    } finally {
+      setUpdatingLinkId(null);
+    }
+  }
 
   const columns: TableColumnsType<SuperadminLinkRow> = [
     {
@@ -202,18 +269,22 @@ export default function SuperadminLinksClient({
     {
       title: "\u0648\u0636\u0639\u06cc\u062a",
       key: "status",
-      width: 140,
+      width: 180,
       render: (_, record) => (
-        <Space size={6} wrap>
-          {record.isActive ? (
-            <Tag color="success">
-              {"\u0641\u0639\u0627\u0644"}
-            </Tag>
-          ) : (
-            <Tag>
-              {"\u063a\u06cc\u0631\u0641\u0639\u0627\u0644"}
-            </Tag>
-          )}
+        <Space size={8} wrap>
+          <Switch
+            checked={record.isActive}
+            loading={updatingLinkId === record.id}
+            disabled={
+              updatingLinkId !== null &&
+              updatingLinkId !== record.id
+            }
+            onChange={(checked) =>
+              updateLinkStatus(record.id, checked)
+            }
+            checkedChildren={"\u0641\u0639\u0627\u0644"}
+            unCheckedChildren={"\u063a\u06cc\u0631\u0641\u0639\u0627\u0644"}
+          />
 
           {record.isPrimary && (
             <Tag color="blue">
@@ -222,6 +293,14 @@ export default function SuperadminLinksClient({
           )}
         </Space>
       ),
+    },
+    {
+      title: "\u06a9\u0644\u06cc\u06a9\u200c\u0647\u0627",
+      dataIndex: "clickCount",
+      key: "clickCount",
+      width: 100,
+      align: "center",
+      sorter: (a, b) => a.clickCount - b.clickCount,
     },
     {
       title: "\u0639\u0645\u0644\u06cc\u0627\u062a",
@@ -382,6 +461,14 @@ export default function SuperadminLinksClient({
                       "/superadmin/links",
                     );
                   }
+
+                  if (key === "users") {
+                    router.push("/superadmin/users");
+                  }
+
+                  if (key === "audit") {
+                    router.push("/superadmin/audit");
+                  }
                 }}
               />
 
@@ -406,6 +493,10 @@ export default function SuperadminLinksClient({
                   </div>
                 </div>
               </div>
+              <div className="px-4 pb-4">
+                <SuperadminLogoutButton />
+              </div>
+
             </div>
           </Sider>
 
@@ -448,6 +539,35 @@ export default function SuperadminLinksClient({
                   <Text type="secondary">
                     {"\u0628\u0631\u0631\u0633\u06cc \u0644\u06cc\u0646\u06a9\u200c\u0647\u0627\u06cc \u062e\u0631\u0648\u062c\u06cc \u062a\u0645\u0627\u0645 \u0627\u067e\u200c\u0647\u0627"}
                   </Text>
+                </div>
+
+                <div className="mb-5 grid gap-4 sm:grid-cols-3">
+                  <Card variant="outlined">
+                    <div className="text-xs text-zinc-500">
+                      {"\u06a9\u0644 \u0644\u06cc\u0646\u06a9\u200c\u0647\u0627"}
+                    </div>
+                    <div className="mt-2 text-2xl font-black text-zinc-100">
+                      {links.length}
+                    </div>
+                  </Card>
+
+                  <Card variant="outlined">
+                    <div className="text-xs text-zinc-500">
+                      {"\u0644\u06cc\u0646\u06a9\u200c\u0647\u0627\u06cc \u0641\u0639\u0627\u0644"}
+                    </div>
+                    <div className="mt-2 text-2xl font-black text-emerald-400">
+                      {activeLinksCount}
+                    </div>
+                  </Card>
+
+                  <Card variant="outlined">
+                    <div className="text-xs text-zinc-500">
+                      {"\u0645\u062c\u0645\u0648\u0639 \u06a9\u0644\u06cc\u06a9\u200c\u0647\u0627"}
+                    </div>
+                    <div className="mt-2 text-2xl font-black text-zinc-100">
+                      {totalClicks}
+                    </div>
+                  </Card>
                 </div>
 
                 <Card variant="outlined">
@@ -536,6 +656,12 @@ export default function SuperadminLinksClient({
                       ]}
                     />
                   </div>
+
+                  {linkStatusError && (
+                    <div className="mb-4 rounded-xl border border-red-900/40 bg-red-950/30 px-4 py-3 text-sm text-red-300">
+                      {linkStatusError}
+                    </div>
+                  )}
 
                   <Table
                     rowKey="id"

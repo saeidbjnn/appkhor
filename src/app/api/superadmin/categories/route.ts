@@ -101,7 +101,8 @@ export async function POST(request: Request) {
 
     const id = crypto.randomUUID();
 
-    await env.appkhor_db
+    await env.appkhor_db.batch([
+      env.appkhor_db
       .prepare(
         `INSERT INTO categories (
           id,
@@ -123,7 +124,40 @@ export async function POST(request: Request) {
         sortOrder,
         isActive,
       )
-      .run();
+,
+
+      env.appkhor_db
+        .prepare(
+          `INSERT INTO audit_logs (
+            id,
+            actor_user_id,
+            action,
+            target_type,
+            target_id,
+            old_value,
+            new_value,
+            metadata
+          )
+          VALUES (?, NULL, ?, ?, ?, NULL, ?, ?)`,
+        )
+        .bind(
+          crypto.randomUUID(),
+          "SUPERADMIN_CATEGORY_CREATE",
+          "CATEGORY",
+          id,
+          JSON.stringify({
+            slug,
+            nameFa,
+            descriptionFa,
+            icon,
+            sortOrder,
+            isActive: isActive === 1,
+          }),
+          JSON.stringify({
+            superadminEmail: session.email,
+          }),
+        ),
+    ]);
 
     return Response.json(
       {

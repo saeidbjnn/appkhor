@@ -394,6 +394,64 @@ export async function PATCH(
           : crypto.randomUUID(),
     }));
 
+    const existingAuditState =
+      await env.appkhor_db
+        .prepare(
+          `SELECT
+            slug,
+            name,
+            name_fa,
+            status,
+            is_featured,
+            sort_order,
+            website_url,
+            repository_url,
+            developer_name,
+            license_name,
+            (
+              SELECT COUNT(*)
+              FROM app_categories ac
+              WHERE ac.app_id = apps.id
+            ) AS category_count,
+            (
+              SELECT COUNT(*)
+              FROM app_platforms ap
+              WHERE ap.app_id = apps.id
+            ) AS platform_count,
+            (
+              SELECT COUNT(*)
+              FROM app_links al
+              WHERE al.app_id = apps.id
+                AND al.is_active = 1
+            ) AS link_count,
+            (
+              SELECT COUNT(*)
+              FROM app_screenshots ass
+              WHERE ass.app_id = apps.id
+                AND ass.is_active = 1
+            ) AS screenshot_count
+          FROM apps
+          WHERE id = ?
+          LIMIT 1`,
+        )
+        .bind(appId)
+        .first<{
+          slug: string;
+          name: string;
+          name_fa: string | null;
+          status: string;
+          is_featured: number;
+          sort_order: number;
+          website_url: string | null;
+          repository_url: string | null;
+          developer_name: string | null;
+          license_name: string | null;
+          category_count: number;
+          platform_count: number;
+          link_count: number;
+          screenshot_count: number;
+        }>();
+
     const statements = [
       env.appkhor_db
         .prepare(
@@ -556,6 +614,97 @@ export async function PATCH(
           ),
       );
     }
+
+    statements.push(
+      env.appkhor_db
+        .prepare(
+          `INSERT INTO audit_logs (
+            id,
+            actor_user_id,
+            action,
+            target_type,
+            target_id,
+            old_value,
+            new_value,
+            metadata
+          )
+          VALUES (?, NULL, ?, ?, ?, ?, ?, ?)`,
+        )
+        .bind(
+          crypto.randomUUID(),
+          "SUPERADMIN_APP_UPDATE",
+          "APP",
+          appId,
+          JSON.stringify(
+            existingAuditState
+              ? {
+                  slug:
+                    existingAuditState.slug,
+                  name:
+                    existingAuditState.name,
+                  nameFa:
+                    existingAuditState.name_fa,
+                  status:
+                    existingAuditState.status,
+                  isFeatured:
+                    existingAuditState.is_featured ===
+                    1,
+                  sortOrder:
+                    existingAuditState.sort_order,
+                  websiteUrl:
+                    existingAuditState.website_url,
+                  repositoryUrl:
+                    existingAuditState.repository_url,
+                  developerName:
+                    existingAuditState.developer_name,
+                  licenseName:
+                    existingAuditState.license_name,
+                  categoryCount:
+                    Number(
+                      existingAuditState.category_count ??
+                        0,
+                    ),
+                  platformCount:
+                    Number(
+                      existingAuditState.platform_count ??
+                        0,
+                    ),
+                  linkCount:
+                    Number(
+                      existingAuditState.link_count ??
+                        0,
+                    ),
+                  screenshotCount:
+                    Number(
+                      existingAuditState.screenshot_count ??
+                        0,
+                    ),
+                }
+              : null,
+          ),
+          JSON.stringify({
+            slug,
+            name,
+            nameFa,
+            status,
+            isFeatured: isFeatured === 1,
+            sortOrder,
+            websiteUrl,
+            repositoryUrl,
+            developerName,
+            licenseName,
+            categoryIds,
+            platformIds,
+            linkCount: links.length,
+            screenshotCount:
+              screenshots.length,
+          }),
+          JSON.stringify({
+            superadminEmail:
+              session.email,
+          }),
+        ),
+    );
 
     await env.appkhor_db.batch(statements);
 

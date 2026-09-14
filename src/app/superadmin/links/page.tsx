@@ -28,6 +28,7 @@ export type SuperadminLinkRow = {
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
+  clickCount: number;
 };
 
 type LinkRow = {
@@ -47,6 +48,7 @@ type LinkRow = {
   sort_order: number;
   created_at: string;
   updated_at: string;
+  click_count: number;
 };
 
 export default async function SuperadminLinksPage() {
@@ -76,7 +78,12 @@ export default async function SuperadminLinksPage() {
         l.is_active,
         l.sort_order,
         l.created_at,
-        l.updated_at
+        l.updated_at,
+        (
+          SELECT COUNT(*)
+          FROM outbound_clicks oc
+          WHERE oc.link_id = l.id
+        ) AS click_count
       FROM app_links l
       INNER JOIN apps a
         ON a.id = l.app_id
@@ -107,6 +114,7 @@ export default async function SuperadminLinksPage() {
       sortOrder: link.sort_order,
       createdAt: link.created_at,
       updatedAt: link.updated_at,
+      clickCount: Number(link.click_count ?? 0),
     }));
 
   return (

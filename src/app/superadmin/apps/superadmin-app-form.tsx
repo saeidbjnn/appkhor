@@ -23,6 +23,8 @@ import {
 } from "antd";
 import type { MenuProps } from "antd";
 
+import SuperadminLogoutButton from "@/app/superadmin/superadmin-logout-button";
+
 const { Header, Sider, Content } = Layout;
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -102,9 +104,17 @@ type SuperadminAppFormProps = {
 const menuItems: MenuProps["items"] = [
   { key: "dashboard", label: "داشبورد" },
   { key: "apps", label: "اپ‌ها" },
-  { key: "categories", label: "دسته‌بندی‌ها", disabled: true },
-  { key: "platforms", label: "پلتفرم‌ها", disabled: true },
-  { key: "links", label: "لینک‌های رسمی", disabled: true },
+  { key: "categories", label: "دسته‌بندی‌ها" },
+  { key: "platforms", label: "پلتفرم‌ها" },
+  { key: "links", label: "لینک‌های رسمی" },
+  {
+    key: "users",
+    label: "\u06a9\u0627\u0631\u0628\u0631\u0627\u0646",
+  },
+  {
+    key: "audit",
+    label: "\u06af\u0632\u0627\u0631\u0634 \u062a\u063a\u06cc\u06cc\u0631\u0627\u062a",
+  },
 ];
 
 const linkTypeOptions = [
@@ -331,6 +341,29 @@ export default function SuperadminAppForm({
 
                   if (key === "apps") {
                     router.push("/superadmin/apps");
+                    return;
+                  }
+
+                  if (key === "categories") {
+                    router.push("/superadmin/categories");
+                    return;
+                  }
+
+                  if (key === "platforms") {
+                    router.push("/superadmin/platforms");
+                    return;
+                  }
+
+                  if (key === "links") {
+                    router.push("/superadmin/links");
+                  }
+
+                  if (key === "users") {
+                    router.push("/superadmin/users");
+                  }
+
+                  if (key === "audit") {
+                    router.push("/superadmin/audit");
                   }
                 }}
               />
@@ -356,6 +389,10 @@ export default function SuperadminAppForm({
                   </div>
                 </div>
               </div>
+              <div className="px-4 pb-4">
+                <SuperadminLogoutButton />
+              </div>
+
             </div>
           </Sider>
 

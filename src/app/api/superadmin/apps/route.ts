@@ -471,6 +471,50 @@ export async function POST(request: Request) {
       );
     }
 
+    statements.push(
+      env.appkhor_db
+        .prepare(
+          `INSERT INTO audit_logs (
+            id,
+            actor_user_id,
+            action,
+            target_type,
+            target_id,
+            old_value,
+            new_value,
+            metadata
+          )
+          VALUES (?, NULL, ?, ?, ?, NULL, ?, ?)`,
+        )
+        .bind(
+          crypto.randomUUID(),
+          "SUPERADMIN_APP_CREATE",
+          "APP",
+          appId,
+          JSON.stringify({
+            slug,
+            name,
+            nameFa,
+            status,
+            isFeatured: isFeatured === 1,
+            sortOrder,
+            websiteUrl,
+            repositoryUrl,
+            developerName,
+            licenseName,
+            categoryIds,
+            platformIds,
+            linkCount: links.length,
+            screenshotCount:
+              screenshots.length,
+          }),
+          JSON.stringify({
+            superadminEmail:
+              session.email,
+          }),
+        ),
+    );
+
     await env.appkhor_db.batch(statements);
 
     return Response.json(
