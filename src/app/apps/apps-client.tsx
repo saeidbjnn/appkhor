@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, useEffect, useRef, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import AuthButton from "@/components/auth/auth-button";
 import { useAppTheme } from "@/components/app-theme-provider";
 import Link from "next/link";
@@ -11,6 +11,7 @@ import type { CatalogApp } from "./page";
 import SiteSearchButton from "@/components/site-search-button";
 
 type TransitionPhase = "idle" | "leaving" | "entering";
+type SortMode = "newest" | "popular" | "featured" | "name";
 
 const APPS_PER_PAGE = 9;
 
@@ -35,6 +36,9 @@ export default function AppsClient({
   const reduceMotion = useReducedMotion();
   const router = useRouter();
   const [search, setSearch] = useState(initialQuery);
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedPlatform, setSelectedPlatform] = useState("");
+  const [sortMode, setSortMode] = useState<SortMode>("newest");
 
   const [currentPage, setCurrentPage] = useState(1);
   const [transitionPhase, setTransitionPhase] =
@@ -44,13 +48,115 @@ export default function AppsClient({
 
   const appsSectionRef = useRef<HTMLElement | null>(null);
 
+  const categoryOptions = useMemo(() => {
+    const values = new Map<
+      string,
+      { slug: string; name: string }
+    >();
+
+    for (const app of apps) {
+      for (const category of app.categories) {
+        values.set(category.slug, {
+          slug: category.slug,
+          name: category.name,
+        });
+      }
+    }
+
+    return Array.from(values.values()).sort((a, b) =>
+      a.name.localeCompare(b.name, "fa"),
+    );
+  }, [apps]);
+
+  const platformOptions = useMemo(() => {
+    const values = new Map<
+      string,
+      { slug: string; name: string }
+    >();
+
+    for (const app of apps) {
+      for (const platform of app.platforms) {
+        values.set(platform.slug, {
+          slug: platform.slug,
+          name: platform.name,
+        });
+      }
+    }
+
+    return Array.from(values.values()).sort((a, b) =>
+      a.name.localeCompare(b.name, "fa"),
+    );
+  }, [apps]);
+
+  const filteredApps = useMemo(() => {
+    const result = apps.filter((app) => {
+      const matchesCategory =
+        !selectedCategory ||
+        app.categories.some(
+          (category) =>
+            category.slug === selectedCategory,
+        );
+
+      const matchesPlatform =
+        !selectedPlatform ||
+        app.platforms.some(
+          (platform) =>
+            platform.slug === selectedPlatform,
+        );
+
+      return matchesCategory && matchesPlatform;
+    });
+
+    return [...result].sort((a, b) => {
+      const aDate = a.publishedAt
+        ? Date.parse(a.publishedAt) || 0
+        : 0;
+
+      const bDate = b.publishedAt
+        ? Date.parse(b.publishedAt) || 0
+        : 0;
+
+      if (sortMode === "popular") {
+        return (
+          b.clickCount - a.clickCount ||
+          bDate - aDate
+        );
+      }
+
+      if (sortMode === "featured") {
+        return (
+          Number(b.featured) -
+            Number(a.featured) ||
+          b.clickCount - a.clickCount ||
+          bDate - aDate
+        );
+      }
+
+      if (sortMode === "name") {
+        return displayName(a).localeCompare(
+          displayName(b),
+          "fa",
+        );
+      }
+
+      return bDate - aDate;
+    });
+  }, [
+    apps,
+    selectedCategory,
+    selectedPlatform,
+    sortMode,
+  ]);
+
   const totalPages = Math.max(
     1,
-    Math.ceil(apps.length / APPS_PER_PAGE),
+    Math.ceil(filteredApps.length / APPS_PER_PAGE),
   );
 
-  const startIndex = (currentPage - 1) * APPS_PER_PAGE;
-  const currentApps = apps.slice(
+  const startIndex =
+    (currentPage - 1) * APPS_PER_PAGE;
+
+  const currentApps = filteredApps.slice(
     startIndex,
     startIndex + APPS_PER_PAGE,
   );
@@ -63,36 +169,56 @@ export default function AppsClient({
   }, [initialQuery]);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const requestedPage = Number(params.get("page") ?? "1");
+    function applyUrlState() {
+      const params = new URLSearchParams(
+        window.location.search,
+      );
 
-    if (
-      Number.isInteger(requestedPage) &&
-      requestedPage >= 1 &&
-      requestedPage <= totalPages
-    ) {
-      setCurrentPage(requestedPage);
+      const requestedPage = Number(
+        params.get("page") ?? "1",
+      );
+
+      setCurrentPage(
+        Number.isInteger(requestedPage) &&
+          requestedPage >= 1
+          ? requestedPage
+          : 1,
+      );
+
+      setSelectedCategory(
+        params.get("category") ?? "",
+      );
+
+      setSelectedPlatform(
+        params.get("platform") ?? "",
+      );
+
+      const requestedSort =
+        params.get("sort");
+
+      setSortMode(
+        requestedSort === "popular" ||
+          requestedSort === "featured" ||
+          requestedSort === "name"
+          ? requestedSort
+          : "newest",
+      );
     }
 
-    function handlePopState() {
-      const newParams = new URLSearchParams(window.location.search);
-      const page = Number(newParams.get("page") ?? "1");
+    applyUrlState();
 
-      if (
-        Number.isInteger(page) &&
-        page >= 1 &&
-        page <= totalPages
-      ) {
-        setCurrentPage(page);
-      }
-    }
-
-    window.addEventListener("popstate", handlePopState);
+    window.addEventListener(
+      "popstate",
+      applyUrlState,
+    );
 
     return () => {
-      window.removeEventListener("popstate", handlePopState);
+      window.removeEventListener(
+        "popstate",
+        applyUrlState,
+      );
     };
-  }, [totalPages]);
+  }, []);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -100,22 +226,170 @@ export default function AppsClient({
     }
   }, [currentPage, totalPages]);
 
-  function handleSearch(event: FormEvent<HTMLFormElement>) {
+  function handleSearch(
+    event: FormEvent<HTMLFormElement>,
+  ) {
     event.preventDefault();
 
     const query = search.trim();
+    const params = new URLSearchParams();
 
-    if (!query) {
-      router.push("/apps");
-      return;
+    if (query) {
+      params.set("q", query);
     }
 
-    router.push(`/apps?q=${encodeURIComponent(query)}`);
+    if (selectedCategory) {
+      params.set(
+        "category",
+        selectedCategory,
+      );
+    }
+
+    if (selectedPlatform) {
+      params.set(
+        "platform",
+        selectedPlatform,
+      );
+    }
+
+    if (sortMode !== "newest") {
+      params.set("sort", sortMode);
+    }
+
+    const queryString = params.toString();
+
+    router.push(
+      queryString
+        ? "/apps?" + queryString
+        : "/apps",
+    );
   }
 
   function clearSearch() {
     setSearch("");
-    router.push("/apps");
+
+    const params = new URLSearchParams();
+
+    if (selectedCategory) {
+      params.set(
+        "category",
+        selectedCategory,
+      );
+    }
+
+    if (selectedPlatform) {
+      params.set(
+        "platform",
+        selectedPlatform,
+      );
+    }
+
+    if (sortMode !== "newest") {
+      params.set("sort", sortMode);
+    }
+
+    const queryString = params.toString();
+
+    router.push(
+      queryString
+        ? "/apps?" + queryString
+        : "/apps",
+    );
+  }
+
+  function pushCatalogUrl(
+    page: number,
+    category: string,
+    platform: string,
+    sort: SortMode,
+  ) {
+    const params = new URLSearchParams();
+
+    if (initialQuery) {
+      params.set("q", initialQuery);
+    }
+
+    if (category) {
+      params.set("category", category);
+    }
+
+    if (platform) {
+      params.set("platform", platform);
+    }
+
+    if (sort !== "newest") {
+      params.set("sort", sort);
+    }
+
+    if (page > 1) {
+      params.set("page", String(page));
+    }
+
+    const queryString = params.toString();
+
+    window.history.pushState(
+      { page },
+      "",
+      queryString
+        ? "/apps?" + queryString
+        : "/apps",
+    );
+  }
+
+  function handleCategoryChange(
+    value: string,
+  ) {
+    setSelectedCategory(value);
+    setCurrentPage(1);
+
+    pushCatalogUrl(
+      1,
+      value,
+      selectedPlatform,
+      sortMode,
+    );
+  }
+
+  function handlePlatformChange(
+    value: string,
+  ) {
+    setSelectedPlatform(value);
+    setCurrentPage(1);
+
+    pushCatalogUrl(
+      1,
+      selectedCategory,
+      value,
+      sortMode,
+    );
+  }
+
+  function handleSortChange(
+    value: SortMode,
+  ) {
+    setSortMode(value);
+    setCurrentPage(1);
+
+    pushCatalogUrl(
+      1,
+      selectedCategory,
+      selectedPlatform,
+      value,
+    );
+  }
+
+  function resetFilters() {
+    setSelectedCategory("");
+    setSelectedPlatform("");
+    setSortMode("newest");
+    setCurrentPage(1);
+
+    pushCatalogUrl(
+      1,
+      "",
+      "",
+      "newest",
+    );
   }
 
   function scrollToApps(): Promise<void> {
@@ -213,6 +487,24 @@ export default function AppsClient({
 
     if (initialQuery) {
       params.set("q", initialQuery);
+    }
+
+    if (selectedCategory) {
+      params.set(
+        "category",
+        selectedCategory,
+      );
+    }
+
+    if (selectedPlatform) {
+      params.set(
+        "platform",
+        selectedPlatform,
+      );
+    }
+
+    if (sortMode !== "newest") {
+      params.set("sort", sortMode);
     }
 
     if (page > 1) {
@@ -860,6 +1152,167 @@ export default function AppsClient({
             </p>
           </Reveal>
 
+          <div
+            className={`mb-8 rounded-3xl border p-4 sm:p-5 ${
+              isDark
+                ? "border-white/10 bg-white/[0.03]"
+                : "border-emerald-200/80 bg-white/80"
+            }`}
+          >
+            <div className="grid gap-3 md:grid-cols-3">
+              <label className="grid gap-2">
+                <span
+                  className={`text-xs font-bold ${
+                    isDark
+                      ? "text-zinc-400"
+                      : "text-zinc-600"
+                  }`}
+                >
+                  {"دسته‌بندی"}
+                </span>
+
+                <select
+                  value={selectedCategory}
+                  onChange={(event) =>
+                    handleCategoryChange(
+                      event.target.value,
+                    )
+                  }
+                  className={`h-12 rounded-xl border px-3 text-sm font-bold outline-none transition ${
+                    isDark
+                      ? "border-white/10 bg-[#0d2116] text-zinc-100 focus:border-emerald-600"
+                      : "border-emerald-200 bg-white text-zinc-800 focus:border-emerald-500"
+                  }`}
+                >
+                  <option value="">
+                    {"همه دسته‌بندی‌ها"}
+                  </option>
+
+                  {categoryOptions.map(
+                    (category) => (
+                      <option
+                        key={category.slug}
+                        value={category.slug}
+                      >
+                        {category.name}
+                      </option>
+                    ),
+                  )}
+                </select>
+              </label>
+
+              <label className="grid gap-2">
+                <span
+                  className={`text-xs font-bold ${
+                    isDark
+                      ? "text-zinc-400"
+                      : "text-zinc-600"
+                  }`}
+                >
+                  {"پلتفرم"}
+                </span>
+
+                <select
+                  value={selectedPlatform}
+                  onChange={(event) =>
+                    handlePlatformChange(
+                      event.target.value,
+                    )
+                  }
+                  className={`h-12 rounded-xl border px-3 text-sm font-bold outline-none transition ${
+                    isDark
+                      ? "border-white/10 bg-[#0d2116] text-zinc-100 focus:border-emerald-600"
+                      : "border-emerald-200 bg-white text-zinc-800 focus:border-emerald-500"
+                  }`}
+                >
+                  <option value="">
+                    {"همه پلتفرم‌ها"}
+                  </option>
+
+                  {platformOptions.map(
+                    (platform) => (
+                      <option
+                        key={platform.slug}
+                        value={platform.slug}
+                      >
+                        {platform.name}
+                      </option>
+                    ),
+                  )}
+                </select>
+              </label>
+
+              <label className="grid gap-2">
+                <span
+                  className={`text-xs font-bold ${
+                    isDark
+                      ? "text-zinc-400"
+                      : "text-zinc-600"
+                  }`}
+                >
+                  {"مرتب‌سازی"}
+                </span>
+
+                <select
+                  value={sortMode}
+                  onChange={(event) =>
+                    handleSortChange(
+                      event.target.value as SortMode,
+                    )
+                  }
+                  className={`h-12 rounded-xl border px-3 text-sm font-bold outline-none transition ${
+                    isDark
+                      ? "border-white/10 bg-[#0d2116] text-zinc-100 focus:border-emerald-600"
+                      : "border-emerald-200 bg-white text-zinc-800 focus:border-emerald-500"
+                  }`}
+                >
+                  <option value="newest">
+                    {"جدیدترین"}
+                  </option>
+                  <option value="popular">
+                    {"محبوب‌ترین"}
+                  </option>
+                  <option value="featured">
+                    {"برگزیده‌ها"}
+                  </option>
+                  <option value="name">
+                    {"نام اپ"}
+                  </option>
+                </select>
+              </label>
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+              <p
+                className={`text-sm font-semibold ${
+                  isDark
+                    ? "text-zinc-400"
+                    : "text-zinc-600"
+                }`}
+              >
+                {filteredApps.length.toLocaleString(
+                  "fa-IR",
+                )}{" "}
+                {"اپ در نتایج"}
+              </p>
+
+              {(selectedCategory ||
+                selectedPlatform ||
+                sortMode !== "newest") && (
+                <button
+                  type="button"
+                  onClick={resetFilters}
+                  className={`rounded-xl border px-4 py-2 text-xs font-bold transition ${
+                    isDark
+                      ? "border-white/10 text-zinc-300 hover:border-emerald-700 hover:text-emerald-400"
+                      : "border-emerald-200 bg-white text-emerald-800 hover:border-emerald-400"
+                  }`}
+                >
+                  {"پاک کردن فیلترها"}
+                </button>
+              )}
+            </div>
+          </div>
           {currentApps.length > 0 ? (
             <div
               className={`grid gap-6 transition-all duration-[500ms] ease-in-out md:grid-cols-2 xl:grid-cols-3 ${getCardsAnimationClass()}`}
@@ -1009,12 +1462,15 @@ export default function AppsClient({
               }`}
             >
               <p className="font-black">
-                هنوز اپ منتشرشده‌ای برای نمایش وجود ندارد.
+                {selectedCategory ||
+                selectedPlatform
+                  ? "با این فیلترها اپی پیدا نشد."
+                  : "هنوز اپ منتشرشده‌ای برای نمایش وجود ندارد."}
               </p>
             </div>
           )}
 
-          {apps.length > APPS_PER_PAGE && (
+          {filteredApps.length > APPS_PER_PAGE && (
             <div className="mt-12 flex flex-wrap items-center justify-center gap-2">
               <motion.button
                 type="button"
