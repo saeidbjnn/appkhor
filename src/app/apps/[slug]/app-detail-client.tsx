@@ -144,13 +144,15 @@ export default function AppDetailClient({
       return null;
     }
 
-    return (
-      links.find(
-        (item) =>
-          item.type === "DOWNLOAD" &&
-          item.platformSlug === devicePlatform,
-      ) ?? null
+    const candidates = links.filter(
+      (item) =>
+        item.type === "DOWNLOAD" &&
+        item.platformSlug === devicePlatform,
     );
+
+    return candidates.length === 1
+      ? candidates[0]
+      : null;
   }, [devicePlatform, links]);
 
   const primaryLink = useMemo(() => {
