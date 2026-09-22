@@ -161,7 +161,32 @@ export default function AppsClient({
     startIndex + APPS_PER_PAGE,
   );
 
-  const freshApps = apps.slice(0, 5);
+  const freshApps = useMemo(
+    () =>
+      [...apps]
+        .sort((a, b) => {
+          const aDate = a.publishedAt
+            ? Date.parse(a.publishedAt) || 0
+            : 0;
+
+          const bDate = b.publishedAt
+            ? Date.parse(b.publishedAt) || 0
+            : 0;
+
+          return bDate - aDate;
+        })
+        .slice(0, 5),
+    [apps],
+  );
+
+  const sortDescription =
+    sortMode === "popular"
+      ? "اپ‌ها بر اساس تعداد مراجعه به منابع رسمی مرتب شده‌اند."
+      : sortMode === "featured"
+        ? "اپ‌های برگزیده در اولویت هستند؛ سپس محبوبیت و زمان انتشار."
+        : sortMode === "name"
+          ? "اپ‌ها بر اساس نام به ترتیب الفبا مرتب شده‌اند."
+          : "اپ‌ها بر اساس زمان انتشار مرتب شده‌اند؛ جدیدترین‌ها اول نمایش داده می‌شوند.";
 
   useEffect(() => {
     setSearch(initialQuery);
@@ -1148,7 +1173,7 @@ export default function AppsClient({
                   : "text-zinc-500"
               }`}
             >
-              اپ‌ها بر اساس زمان انتشار مرتب شده‌اند؛ جدیدترین‌ها اول نمایش داده می‌شوند.
+              {sortDescription}
             </p>
           </Reveal>
 
