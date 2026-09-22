@@ -111,6 +111,12 @@ export default function AuthButton() {
       </summary>
 
       <div className="absolute left-0 top-[calc(100%+0.5rem)] z-50 min-w-56 overflow-hidden rounded-2xl border border-zinc-200 bg-white p-2 text-zinc-900 shadow-xl dark:border-white/10 dark:bg-[#0b1c12] dark:text-zinc-100">
+        <Link
+          href="/account"
+          className="flex w-full items-center rounded-xl px-3 py-2.5 text-right text-sm font-bold transition hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-400"
+        >
+          {"\u062d\u0633\u0627\u0628 \u0645\u0646"}
+        </Link>
         {user.email && (
           <div className="border-b border-zinc-100 px-3 py-3 dark:border-white/10">
             <p className="text-xs text-zinc-400">
