@@ -21,6 +21,12 @@ type MeResponse = {
   user: CurrentUser | null;
 };
 
+type ProfileResponse = {
+  success: boolean;
+  message: string;
+  displayName?: string | null;
+};
+
 function roleLabel(role: CurrentUser["role"]) {
   if (role === "SUPER_ADMIN") {
     return "\u0645\u062f\u06cc\u0631 \u0627\u0631\u0634\u062f";
@@ -42,6 +48,18 @@ export default function AccountPage() {
 
   const [isLoading, setIsLoading] =
     useState(true);
+
+  const [displayName, setDisplayName] =
+    useState("");
+
+  const [isSaving, setIsSaving] =
+    useState(false);
+
+  const [saveMessage, setSaveMessage] =
+    useState("");
+
+  const [saveSuccess, setSaveSuccess] =
+    useState(false);
 
   useEffect(() => {
     async function loadUser() {
@@ -65,6 +83,9 @@ export default function AccountPage() {
         }
 
         setUser(data.user);
+        setDisplayName(
+          data.user.displayName ?? "",
+        );
       } catch {
         router.replace("/auth");
       } finally {
@@ -74,6 +95,73 @@ export default function AccountPage() {
 
     void loadUser();
   }, [router]);
+
+  async function handleProfileSubmit(
+    event: React.FormEvent<HTMLFormElement>,
+  ) {
+    event.preventDefault();
+
+    if (isSaving) {
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveMessage("");
+    setSaveSuccess(false);
+
+    try {
+      const response = await fetch(
+        "/api/account/profile",
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify({
+            displayName,
+          }),
+        },
+      );
+
+      const data =
+        (await response.json()) as ProfileResponse;
+
+      setSaveMessage(data.message);
+      setSaveSuccess(
+        response.ok && data.success,
+      );
+
+      if (
+        response.ok &&
+        data.success
+      ) {
+        const nextDisplayName =
+          data.displayName ?? null;
+
+        setUser((current) =>
+          current
+            ? {
+                ...current,
+                displayName:
+                  nextDisplayName,
+              }
+            : current,
+        );
+
+        setDisplayName(
+          nextDisplayName ?? "",
+        );
+      }
+    } catch {
+      setSaveMessage(
+        "\u0627\u0631\u062a\u0628\u0627\u0637 \u0628\u0627 \u0633\u0631\u0648\u0631 \u0628\u0631\u0642\u0631\u0627\u0631 \u0646\u0634\u062f. \u062f\u0648\u0628\u0627\u0631\u0647 \u062a\u0644\u0627\u0634 \u06a9\u0646\u06cc\u062f.",
+      );
+      setSaveSuccess(false);
+    } finally {
+      setIsSaving(false);
+    }
+  }
 
   if (isLoading || !user) {
     return (
@@ -231,6 +319,86 @@ export default function AccountPage() {
               </dd>
             </div>
           </dl>
+        </section>
+
+        <section
+          className={
+            "mt-6 rounded-3xl border p-6 " +
+            (isDark
+              ? "border-white/10 bg-white/[0.03]"
+              : "border-emerald-100 bg-white")
+          }
+        >
+          <h2 className="text-lg font-black">
+            {"\u0646\u0627\u0645 \u0646\u0645\u0627\u06cc\u0634\u06cc"}
+          </h2>
+
+          <p className="mt-2 text-sm leading-7 text-zinc-500">
+            {"\u0627\u06cc\u0646 \u0646\u0627\u0645 \u062f\u0631 \u0628\u062e\u0634\u200c\u0647\u0627\u06cc \u0645\u0631\u0628\u0648\u0637 \u0628\u0647 \u062d\u0633\u0627\u0628 \u0634\u0645\u0627 \u0646\u0645\u0627\u06cc\u0634 \u062f\u0627\u062f\u0647 \u0645\u06cc\u200c\u0634\u0648\u062f."}
+          </p>
+
+          <form
+            onSubmit={handleProfileSubmit}
+            className="mt-5"
+          >
+            <label className="block">
+              <span className="text-xs font-bold text-zinc-500">
+                {"\u0646\u0627\u0645"}
+              </span>
+
+              <input
+                type="text"
+                value={displayName}
+                onChange={(event) =>
+                  setDisplayName(
+                    event.target.value,
+                  )
+                }
+                maxLength={60}
+                autoComplete="name"
+                placeholder="\u0646\u0627\u0645 \u0646\u0645\u0627\u06cc\u0634\u06cc"
+                className={
+                  "mt-2 h-12 w-full rounded-xl border px-4 text-sm font-bold outline-none transition " +
+                  (isDark
+                    ? "border-white/10 bg-[#0d2116] text-white placeholder:text-zinc-600 focus:border-emerald-600"
+                    : "border-emerald-200 bg-white text-zinc-900 placeholder:text-zinc-400 focus:border-emerald-500")
+                }
+              />
+            </label>
+
+            <div className="mt-2 flex items-center justify-between gap-3">
+              <span className="text-xs text-zinc-500">
+                {displayName.length.toLocaleString(
+                  "fa-IR",
+                )}
+                {" / "}
+                {"\u06f6\u06f0"}
+              </span>
+            </div>
+
+            {saveMessage && (
+              <p
+                className={
+                  "mt-4 rounded-xl px-4 py-3 text-sm font-bold " +
+                  (saveSuccess
+                    ? "bg-emerald-500/10 text-emerald-600"
+                    : "bg-red-500/10 text-red-600 dark:text-red-400")
+                }
+              >
+                {saveMessage}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="mt-5 inline-flex min-w-32 items-center justify-center rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-black text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isSaving
+                ? "\u062f\u0631 \u062d\u0627\u0644 \u0630\u062e\u06cc\u0631\u0647..."
+                : "\u0630\u062e\u06cc\u0631\u0647 \u062a\u063a\u06cc\u06cc\u0631\u0627\u062a"}
+            </button>
+          </form>
         </section>
 
         <section
