@@ -1,4 +1,5 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import AppDetailClient from "./app-detail-client";
 
@@ -118,6 +119,14 @@ type PageProps = {
   params: Promise<{ slug: string }>;
 };
 
+type MetadataRow = {
+  slug: string;
+  name: string;
+  name_fa: string | null;
+  short_description_fa: string;
+  logo_url: string | null;
+};
+
 function getHighlights(
   app: AppDetailData,
   platforms: AppPlatform[],
@@ -148,6 +157,73 @@ function getHighlights(
   });
 
   return items;
+}
+
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const { env } = getCloudflareContext();
+
+  const row = await env.appkhor_db
+    .prepare(
+      `SELECT
+        slug,
+        name,
+        name_fa,
+        short_description_fa,
+        logo_url
+      FROM apps
+      WHERE slug = ?
+        AND status = 'PUBLISHED'
+      LIMIT 1`,
+    )
+    .bind(slug)
+    .first<MetadataRow>();
+
+  if (!row) {
+    return {};
+  }
+
+  const displayName =
+    row.name_fa || row.name;
+
+  const canonical =
+    "/apps/" +
+    encodeURIComponent(row.slug);
+
+  const images = row.logo_url
+    ? [row.logo_url]
+    : undefined;
+
+  return {
+    title: displayName,
+    description:
+      row.short_description_fa,
+    alternates: {
+      canonical,
+    },
+    openGraph: {
+      type: "website",
+      locale: "fa_IR",
+      url: canonical,
+      title:
+        displayName +
+        " | \u0627\u067e\u200c\u062e\u0648\u0631",
+      description:
+        row.short_description_fa,
+      images,
+    },
+    twitter: {
+      card: "summary",
+      title:
+        displayName +
+        " | \u0627\u067e\u200c\u062e\u0648\u0631",
+      description:
+        row.short_description_fa,
+      images,
+    },
+  };
 }
 
 export default async function AppDetailPage({ params }: PageProps) {
