@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Script from "next/script";
 import { Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
@@ -6,6 +7,10 @@ import type { ReactNode } from "react";
 
 import { DirectionProvider } from "@/components/ui/direction";
 import { AppThemeProvider } from "@/components/app-theme-provider";
+import {
+  getDirection,
+  isLocale,
+} from "@/lib/i18n";
 
 import "./globals.css";
 
@@ -73,11 +78,27 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: ReactNode;
 }>) {
+  const requestHeaders =
+    await headers();
+
+  const requestedLocale =
+    requestHeaders.get(
+      "x-appkhor-locale",
+    ) ?? "fa";
+
+  const locale =
+    isLocale(requestedLocale)
+      ? requestedLocale
+      : "fa";
+
+  const direction =
+    getDirection(locale);
+
   return (
     <html
       lang="fa"
@@ -88,7 +109,7 @@ export default function RootLayout({
         className={`${samim.className} ${samim.variable} ${fontMono.variable} antialiased`}
       >
         <AppThemeProvider>
-          <DirectionProvider direction="rtl">
+          <DirectionProvider direction={direction}>
             {children}
           </DirectionProvider>
         </AppThemeProvider>
