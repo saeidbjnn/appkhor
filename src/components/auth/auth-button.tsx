@@ -43,9 +43,40 @@ export default function AuthButton() {
       } finally {
         setIsLoading(false);
       }
+    }    function handleProfileUpdated(
+      event: Event,
+    ) {
+      const customEvent =
+        event as CustomEvent<{
+          displayName?: string | null;
+        }>;
+
+      setUser((current) =>
+        current
+          ? {
+              ...current,
+              displayName:
+                customEvent.detail
+                  ?.displayName ??
+                null,
+            }
+          : current,
+      );
     }
 
     void loadUser();
+
+    window.addEventListener(
+      "appkhor:profile-updated",
+      handleProfileUpdated,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "appkhor:profile-updated",
+        handleProfileUpdated,
+      );
+    };
   }, []);
 
   async function handleLogout() {

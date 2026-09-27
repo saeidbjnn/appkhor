@@ -152,6 +152,18 @@ export default function AccountPage() {
         setDisplayName(
           nextDisplayName ?? "",
         );
+
+        window.dispatchEvent(
+          new CustomEvent(
+            "appkhor:profile-updated",
+            {
+              detail: {
+                displayName:
+                  nextDisplayName,
+              },
+            },
+          ),
+        );
       }
     } catch {
       setSaveMessage(
