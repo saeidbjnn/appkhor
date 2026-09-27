@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import SiteSearchButton from "@/components/site-search-button";
 
 import AuthButton from "@/components/auth/auth-button";
+import LanguageSwitcher from "@/components/language-switcher";
 import { useAppTheme } from "@/components/app-theme-provider";
 import type {
   HomeApp,
@@ -293,6 +294,7 @@ export default function HomeClient({
               حمایت مالی
             </motion.a>
 
+            <LanguageSwitcher />
             <AuthButton />
           </div>
         </div>

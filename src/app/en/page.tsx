@@ -1,5 +1,6 @@
 ﻿import type { Metadata } from "next";
 import Link from "next/link";
+import LanguageSwitcher from "@/components/language-switcher";
 
 export const metadata: Metadata = {
   title: "AppKhor",
@@ -41,12 +42,7 @@ export default function EnglishHomePage() {
             Browse apps
           </Link>
 
-          <Link
-            href="/"
-            className="rounded-xl border px-5 py-3 font-medium transition hover:bg-muted"
-          >
-            فارسی
-          </Link>
+          <LanguageSwitcher />
         </div>
       </div>
     </main>

@@ -1,6 +1,7 @@
 ﻿import { getCloudflareContext } from "@opennextjs/cloudflare";
 import type { Metadata } from "next";
 import Link from "next/link";
+import LanguageSwitcher from "@/components/language-switcher";
 import { notFound } from "next/navigation";
 
 export const runtime = "nodejs";
@@ -164,12 +165,7 @@ export default async function EnglishAppDetailPage({
             ← Back to apps
           </Link>
 
-          <Link
-            href={`/apps/${app.slug}`}
-            className="rounded-xl border px-4 py-2 text-sm font-medium transition hover:bg-muted"
-          >
-            فارسی
-          </Link>
+          <LanguageSwitcher />
         </div>
 
         <section className="space-y-6">
