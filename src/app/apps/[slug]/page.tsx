@@ -202,6 +202,12 @@ export async function generateMetadata({
       row.short_description_fa,
     alternates: {
       canonical,
+      languages: {
+        fa: canonical,
+        en:
+          "/en/apps/" +
+          encodeURIComponent(row.slug),
+      },
     },
     openGraph: {
       type: "website",

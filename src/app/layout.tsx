@@ -51,13 +51,9 @@ export const metadata: Metadata = {
   },
   description:
     "\u06a9\u0634\u0641 \u0627\u067e\u200c\u0647\u0627 \u0648 \u0627\u0628\u0632\u0627\u0631\u0647\u0627\u06cc \u06a9\u0627\u0631\u0628\u0631\u062f\u06cc \u0628\u0627 \u0645\u0639\u0631\u0641\u06cc \u0641\u0627\u0631\u0633\u06cc \u0648 \u0644\u06cc\u0646\u06a9 \u0645\u0633\u062a\u0642\u06cc\u0645 \u0628\u0647 \u0645\u0646\u0627\u0628\u0639 \u0631\u0633\u0645\u06cc.",
-  alternates: {
-    canonical: "/",
-  },
   openGraph: {
     type: "website",
     locale: "fa_IR",
-    url: "/",
     siteName:
       "\u0627\u067e\u200c\u062e\u0648\u0631",
     title:
