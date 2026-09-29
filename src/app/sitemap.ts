@@ -17,11 +17,45 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: baseUrl,
       changeFrequency: "daily",
       priority: 1,
+      alternates: {
+        languages: {
+          fa: baseUrl,
+          en: baseUrl + "/en",
+        },
+      },
+    },
+    {
+      url: baseUrl + "/en",
+      changeFrequency: "daily",
+      priority: 1,
+      alternates: {
+        languages: {
+          fa: baseUrl,
+          en: baseUrl + "/en",
+        },
+      },
     },
     {
       url: baseUrl + "/apps",
       changeFrequency: "daily",
       priority: 0.9,
+      alternates: {
+        languages: {
+          fa: baseUrl + "/apps",
+          en: baseUrl + "/en/apps",
+        },
+      },
+    },
+    {
+      url: baseUrl + "/en/apps",
+      changeFrequency: "daily",
+      priority: 0.9,
+      alternates: {
+        languages: {
+          fa: baseUrl + "/apps",
+          en: baseUrl + "/en/apps",
+        },
+      },
     },
     {
       url: baseUrl + "/categories",
@@ -51,16 +85,41 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .all<AppRow>();
 
     const appEntries: MetadataRoute.Sitemap =
-      (result.results ?? []).map((app) => ({
-        url:
-          baseUrl +
-          "/apps/" +
-          encodeURIComponent(app.slug),
-        lastModified:
-          app.published_at ?? undefined,
-        changeFrequency: "weekly",
-        priority: 0.8,
-      }));
+      (result.results ?? []).flatMap((app) => {
+        const encodedSlug =
+          encodeURIComponent(app.slug);
+
+        const faUrl =
+          baseUrl + "/apps/" + encodedSlug;
+
+        const enUrl =
+          baseUrl + "/en/apps/" + encodedSlug;
+
+        const shared = {
+          lastModified:
+            app.published_at ?? undefined,
+          changeFrequency:
+            "weekly" as const,
+          priority: 0.8,
+          alternates: {
+            languages: {
+              fa: faUrl,
+              en: enUrl,
+            },
+          },
+        };
+
+        return [
+          {
+            url: faUrl,
+            ...shared,
+          },
+          {
+            url: enUrl,
+            ...shared,
+          },
+        ];
+      });
 
     return [
       ...staticEntries,
