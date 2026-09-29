@@ -2,6 +2,7 @@
 
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import AuthButton from "@/components/auth/auth-button";
+import LanguageSwitcher from "@/components/language-switcher";
 import { useAppTheme } from "@/components/app-theme-provider";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -717,6 +718,9 @@ export default function AppsClient({
             >
               حمایت مالی
             </motion.a>
+
+            <LanguageSwitcher />
+
 
             <AuthButton />
           </div>

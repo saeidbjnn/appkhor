@@ -6,6 +6,7 @@ import { motion, useReducedMotion } from "motion/react";
 
 import { useDevicePlatform } from "@/hooks/use-device-platform";
 import AuthButton from "@/components/auth/auth-button";
+import LanguageSwitcher from "@/components/language-switcher";
 import { useAppTheme } from "@/components/app-theme-provider";
 import SiteSearchButton from "@/components/site-search-button";
 
@@ -339,6 +340,9 @@ export default function AppDetailClient({
             >
               حمایت مالی
             </motion.a>
+
+            <LanguageSwitcher />
+
 
             <AuthButton />
           </div>
