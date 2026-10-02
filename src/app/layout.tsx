@@ -97,8 +97,8 @@ export default async function RootLayout({
 
   return (
     <html
-      lang="fa"
-      dir="rtl"
+      lang={locale}
+      dir={direction}
       suppressHydrationWarning
     >
       <body
