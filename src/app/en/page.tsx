@@ -1,6 +1,12 @@
-﻿import type { Metadata } from "next";
-import Link from "next/link";
-import LanguageSwitcher from "@/components/language-switcher";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
+import type { Metadata } from "next";
+
+import HomeClient from "../home-client";
+import type {
+  HomeApp,
+  HomeCategory,
+  HomeStats,
+} from "../page";
 
 export const metadata: Metadata = {
   title: "AppKhor",
@@ -9,42 +15,300 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/en",
     languages: {
-      "fa-IR": "/",
-      "en": "/en",
+      fa: "/",
+      en: "/en",
     },
+  },
+  openGraph: {
+    locale: "en_US",
+    url: "/en",
   },
 };
 
-export default function EnglishHomePage() {
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+type AppRow = {
+  id: string;
+  slug: string;
+  name: string;
+  short_description: string;
+  logo_url: string | null;
+  developer_name: string | null;
+  license_name: string | null;
+  is_featured: number;
+  published_at: string | null;
+  category_name: string | null;
+  platform_count: number;
+  click_count: number;
+};
+
+type CategoryRow = {
+  id: string;
+  slug: string;
+  name: string;
+  icon: string | null;
+  app_count: number;
+};
+
+type StatsRow = {
+  published_apps: number;
+  outbound_clicks: number;
+  active_categories: number;
+};
+
+function mapApp(row: AppRow): HomeApp {
+  return {
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    nameFa: null,
+    description: row.short_description,
+    logoUrl: row.logo_url,
+    developerName: row.developer_name,
+    licenseName: row.license_name,
+    featured: row.is_featured === 1,
+    publishedAt: row.published_at,
+    category: row.category_name,
+    platformCount: Number(row.platform_count ?? 0),
+    clickCount: Number(row.click_count ?? 0),
+  };
+}
+
+export default async function EnglishHomePage() {
+  const { env } = getCloudflareContext();
+
+  const [
+    latestResult,
+    popularResult,
+    categoriesResult,
+    statsResult,
+  ] = await Promise.all([
+    env.appkhor_db
+      .prepare(
+        `SELECT
+          apps.id,
+          apps.slug,
+          apps.name,
+          COALESCE(
+            apps.short_description_en,
+            apps.short_description_fa
+          ) AS short_description,
+          apps.logo_url,
+          apps.developer_name,
+          apps.license_name,
+          apps.is_featured,
+          apps.published_at,
+          (
+            SELECT COALESCE(
+              categories.name_en,
+              categories.name_fa
+            )
+            FROM app_categories
+            INNER JOIN categories
+              ON categories.id =
+                 app_categories.category_id
+            WHERE app_categories.app_id =
+                  apps.id
+              AND categories.is_active = 1
+            ORDER BY
+              categories.sort_order,
+              categories.name_fa
+            LIMIT 1
+          ) AS category_name,
+          (
+            SELECT COUNT(*)
+            FROM app_platforms
+            INNER JOIN platforms
+              ON platforms.id =
+                 app_platforms.platform_id
+            WHERE app_platforms.app_id =
+                  apps.id
+              AND platforms.is_active = 1
+          ) AS platform_count,
+          (
+            SELECT COUNT(*)
+            FROM app_links
+            INNER JOIN outbound_clicks
+              ON outbound_clicks.link_id =
+                 app_links.id
+            WHERE app_links.app_id =
+                  apps.id
+          ) AS click_count
+        FROM apps
+        WHERE apps.status = 'PUBLISHED'
+        ORDER BY
+          CASE
+            WHEN apps.published_at IS NULL
+              THEN 1
+            ELSE 0
+          END,
+          apps.published_at DESC,
+          apps.created_at DESC
+        LIMIT 3`,
+      )
+      .all<AppRow>(),
+
+    env.appkhor_db
+      .prepare(
+        `SELECT
+          apps.id,
+          apps.slug,
+          apps.name,
+          COALESCE(
+            apps.short_description_en,
+            apps.short_description_fa
+          ) AS short_description,
+          apps.logo_url,
+          apps.developer_name,
+          apps.license_name,
+          apps.is_featured,
+          apps.published_at,
+          (
+            SELECT COALESCE(
+              categories.name_en,
+              categories.name_fa
+            )
+            FROM app_categories
+            INNER JOIN categories
+              ON categories.id =
+                 app_categories.category_id
+            WHERE app_categories.app_id =
+                  apps.id
+              AND categories.is_active = 1
+            ORDER BY
+              categories.sort_order,
+              categories.name_fa
+            LIMIT 1
+          ) AS category_name,
+          (
+            SELECT COUNT(*)
+            FROM app_platforms
+            INNER JOIN platforms
+              ON platforms.id =
+                 app_platforms.platform_id
+            WHERE app_platforms.app_id =
+                  apps.id
+              AND platforms.is_active = 1
+          ) AS platform_count,
+          (
+            SELECT COUNT(*)
+            FROM app_links
+            INNER JOIN outbound_clicks
+              ON outbound_clicks.link_id =
+                 app_links.id
+            WHERE app_links.app_id =
+                  apps.id
+              AND outbound_clicks.created_at >=
+                  datetime('now', '-7 days')
+          ) AS click_count
+        FROM apps
+        WHERE apps.status = 'PUBLISHED'
+        ORDER BY
+          click_count DESC,
+          apps.is_featured DESC,
+          CASE
+            WHEN apps.published_at IS NULL
+              THEN 1
+            ELSE 0
+          END,
+          apps.published_at DESC,
+          apps.created_at DESC
+        LIMIT 3`,
+      )
+      .all<AppRow>(),
+
+    env.appkhor_db
+      .prepare(
+        `SELECT
+          categories.id,
+          categories.slug,
+          COALESCE(
+            categories.name_en,
+            categories.name_fa
+          ) AS name,
+          categories.icon,
+          COUNT(DISTINCT apps.id) AS app_count
+        FROM categories
+        LEFT JOIN app_categories
+          ON app_categories.category_id =
+             categories.id
+        LEFT JOIN apps
+          ON apps.id = app_categories.app_id
+          AND apps.status = 'PUBLISHED'
+        WHERE categories.is_active = 1
+        GROUP BY
+          categories.id,
+          categories.slug,
+          categories.name_en,
+          categories.name_fa,
+          categories.icon,
+          categories.sort_order
+        ORDER BY
+          app_count DESC,
+          categories.sort_order,
+          categories.name_fa
+        LIMIT 4`,
+      )
+      .all<CategoryRow>(),
+
+    env.appkhor_db
+      .prepare(
+        `SELECT
+          (
+            SELECT COUNT(*)
+            FROM apps
+            WHERE status = 'PUBLISHED'
+          ) AS published_apps,
+          (
+            SELECT COUNT(*)
+            FROM outbound_clicks
+          ) AS outbound_clicks,
+          (
+            SELECT COUNT(*)
+            FROM categories
+            WHERE is_active = 1
+          ) AS active_categories`,
+      )
+      .first<StatsRow>(),
+  ]);
+
+  const latestApps =
+    (latestResult.results ?? []).map(mapApp);
+
+  const popularApps =
+    (popularResult.results ?? []).map(mapApp);
+
+  const categories: HomeCategory[] =
+    (categoriesResult.results ?? []).map(
+      (row) => ({
+        id: row.id,
+        slug: row.slug,
+        name: row.name,
+        icon: row.icon,
+        appCount: Number(row.app_count ?? 0),
+      }),
+    );
+
+  const stats: HomeStats = {
+    publishedApps: Number(
+      statsResult?.published_apps ?? 0,
+    ),
+    outboundClicks: Number(
+      statsResult?.outbound_clicks ?? 0,
+    ),
+    activeCategories: Number(
+      statsResult?.active_categories ?? 0,
+    ),
+  };
+
   return (
-    <main className="mx-auto min-h-screen w-full max-w-5xl px-6 py-16">
-      <div className="space-y-8">
-        <div className="space-y-4">
-          <p className="text-sm font-medium text-emerald-600">
-            AppKhor
-          </p>
-
-          <h1 className="text-4xl font-bold tracking-tight">
-            Discover useful apps and open-source tools
-          </h1>
-
-          <p className="max-w-2xl text-lg text-muted-foreground">
-            Find practical software with direct links to official
-            websites, repositories, downloads, and stores.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap gap-3">
-          <Link
-            href="/en/apps"
-            className="rounded-xl bg-emerald-600 px-5 py-3 font-medium text-white transition hover:bg-emerald-500"
-          >
-            Browse apps
-          </Link>
-
-          <LanguageSwitcher />
-        </div>
-      </div>
-    </main>
+    <HomeClient
+      latestApps={latestApps}
+      popularApps={popularApps}
+      categories={categories}
+      stats={stats}
+      locale="en"
+    />
   );
 }

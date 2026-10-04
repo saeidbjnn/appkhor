@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { type FormEvent, type MouseEvent, useState } from "react";
 import Link from "next/link";
@@ -20,19 +20,20 @@ type HomeClientProps = {
   popularApps: HomeApp[];
   categories: HomeCategory[];
   stats: HomeStats;
+  locale?: "fa" | "en";
 };
 
 const categoryEmoji: Record<string, string> = {
-  productivity: "⚡",
-  development: "💻",
-  "internet-network": "🌐",
-  "security-privacy": "🛡️",
-  multimedia: "🎬",
-  "design-creative": "🎨",
-  "file-management": "📁",
-  "system-tools": "⚙️",
-  communication: "💬",
-  education: "🎓",
+  productivity: "âš¡",
+  development: "ðŸ’»",
+  "internet-network": "ðŸŒ",
+  "security-privacy": "ðŸ›¡ï¸",
+  multimedia: "ðŸŽ¬",
+  "design-creative": "ðŸŽ¨",
+  "file-management": "ðŸ“",
+  "system-tools": "âš™ï¸",
+  communication: "ðŸ’¬",
+  education: "ðŸŽ“",
 };
 
 function SearchIcon() {
@@ -89,7 +90,7 @@ function displayName(app: HomeApp) {
 }
 
 function fallbackAppIcon(app: HomeApp) {
-  return displayName(app).trim().slice(0, 1).toUpperCase() || "ا";
+  return displayName(app).trim().slice(0, 1).toUpperCase() || "Ø§";
 }
 
 function faNumber(value: number) {
@@ -101,10 +102,16 @@ export default function HomeClient({
   popularApps,
   categories,
   stats,
+  locale = "fa",
 }: HomeClientProps) {
   const { isDark, mounted, toggleTheme } = useAppTheme();
   const reduceMotion = useReducedMotion();
   const router = useRouter();
+  const isEnglish = locale === "en";
+  const localizedNumber = (value: number) =>
+    value.toLocaleString(isEnglish ? "en-US" : "fa-IR");
+  const localePath = (path: string) =>
+    isEnglish ? `/en${path === "/" ? "" : path}` : path;
   const [search, setSearch] = useState("");
 
   function scrollToSection(sectionId: string) {
@@ -148,16 +155,16 @@ export default function HomeClient({
     const query = search.trim();
 
     if (!query) {
-      router.push("/apps");
+      router.push(localePath("/apps"));
       return;
     }
 
-    router.push(`/search?q=${encodeURIComponent(query)}`);
+    router.push(`${localePath("/apps")}?q=${encodeURIComponent(query)}`);
   }
 
   return (
     <main
-      dir="rtl"
+      dir={locale === "en" ? "ltr" : "rtl"}
       className={`min-h-screen transition-colors duration-300 ${
         isDark
           ? "bg-[#07120c] text-zinc-100"
@@ -175,14 +182,14 @@ export default function HomeClient({
         }`}
       >
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 lg:px-8">
-          <Link href="/" className="flex items-center gap-3">
+          <Link href={localePath("/")} className="flex items-center gap-3">
             <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-700 text-xl font-black text-white shadow-lg shadow-emerald-900/20">
-              ا
+              {isEnglish ? "A" : "\u0627"}
             </span>
 
             <div>
               <strong className="block text-xl font-black">
-                اپ‌خور
+                {isEnglish ? "AppKhor" : "\u0627\u067e\u200c\u062e\u0648\u0631"}
               </strong>
 
               <span
@@ -192,7 +199,9 @@ export default function HomeClient({
                     : "text-zinc-500"
                 }`}
               >
-                اپ‌های مفید، یک‌جا
+                {isEnglish
+                  ? "Useful apps, all in one place"
+                  : "\u0627\u067e\u200c\u0647\u0627\u06cc \u0645\u0641\u06cc\u062f\u060c \u06cc\u06a9\u200c\u062c\u0627"}
               </span>
             </div>
           </Link>
@@ -204,22 +213,25 @@ export default function HomeClient({
                 : "text-zinc-600"
             }`}
           >
-            <Link href="/" className="text-emerald-500">
-              صفحه اصلی
+            <Link
+              href={localePath("/")}
+              className="text-emerald-500"
+            >
+              {isEnglish ? "Home" : "\u0635\u0641\u062d\u0647 \u0627\u0635\u0644\u06cc"}
             </Link>
 
             <Link
-              href="/categories"
+              href={localePath("/categories")}
               className="transition hover:text-emerald-500"
             >
-              دسته‌بندی‌ها
+              {isEnglish ? "Categories" : "\u062f\u0633\u062a\u0647\u200c\u0628\u0646\u062f\u06cc\u200c\u0647\u0627"}
             </Link>
 
             <Link
-              href="/apps"
+              href={localePath("/apps")}
               className="transition hover:text-emerald-500"
             >
-              همه اپ‌ها
+              {isEnglish ? "All apps" : "\u0647\u0645\u0647 \u0627\u067e\u200c\u0647\u0627"}
             </Link>
 
             <a
@@ -229,7 +241,7 @@ export default function HomeClient({
               }
               className="transition hover:text-emerald-500"
             >
-              درباره ما
+              {isEnglish ? "About" : "\u062f\u0631\u0628\u0627\u0631\u0647 \u0645\u0627"}
             </a>
           </nav>
 <SiteSearchButton />
@@ -256,8 +268,8 @@ export default function HomeClient({
                 stiffness: 420,
                 damping: 22,
               }}
-              aria-label="تغییر حالت نمایش"
-              title={isDark ? "حالت روشن" : "حالت شب"}
+              aria-label="ØªØºÛŒÛŒØ± Ø­Ø§Ù„Øª Ù†Ù…Ø§ÛŒØ´"
+              title={isDark ? "Ø­Ø§Ù„Øª Ø±ÙˆØ´Ù†" : "Ø­Ø§Ù„Øª Ø´Ø¨"}
               className={`flex h-11 w-11 items-center justify-center rounded-xl border text-lg transition ${
                 isDark
                   ? "border-white/10 bg-white/5 hover:bg-white/10"
@@ -266,9 +278,9 @@ export default function HomeClient({
             >
               {mounted
                 ? isDark
-                  ? "☀️"
-                  : "🌙"
-                : "🌙"}
+                  ? "â˜€ï¸"
+                  : "ðŸŒ™"
+                : "ðŸŒ™"}
             </motion.button>
 
             <motion.a
@@ -291,7 +303,7 @@ export default function HomeClient({
                   : "border-emerald-200 text-emerald-800 hover:bg-emerald-50"
               }`}
             >
-              حمایت مالی
+              Ø­Ù…Ø§ÛŒØª Ù…Ø§Ù„ÛŒ
             </motion.a>
 
             <LanguageSwitcher />
@@ -328,16 +340,31 @@ export default function HomeClient({
               }`}
             >
               <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              مجموعه‌ای از اپ‌های متن‌باز کاربردی
+              {isEnglish
+                ? "A curated collection of useful open-source apps"
+                : "\u0645\u062c\u0645\u0648\u0639\u0647\u200c\u0627\u06cc \u0627\u0632 \u0627\u067e\u200c\u0647\u0627\u06cc \u0645\u062a\u0646\u200c\u0628\u0627\u0632 \u06a9\u0627\u0631\u0628\u0631\u062f\u06cc"}
             </div>
 
             <h1 className="max-w-3xl text-4xl font-black leading-[1.35] tracking-tight sm:text-5xl lg:text-6xl">
-              اپ‌های مفید را
-              <span className="text-emerald-600">
-                {" "}
-                پیدا کن، بررسی کن{" "}
-              </span>
-              و از منبع رسمی بگیر
+              {isEnglish ? (
+                <>
+                  Discover useful apps,
+                  <span className="text-emerald-600">
+                    {" "}
+                    review them{" "}
+                  </span>
+                  and get them from official sources
+                </>
+              ) : (
+                <>
+                  {"\u0627\u067e\u200c\u0647\u0627\u06cc \u0645\u0641\u06cc\u062f \u0631\u0627"}
+                  <span className="text-emerald-600">
+                    {" "}
+                    {"\u067e\u06cc\u062f\u0627 \u06a9\u0646\u060c \u0628\u0631\u0631\u0633\u06cc \u06a9\u0646"}{" "}
+                  </span>
+                  {"\u0648 \u0627\u0632 \u0645\u0646\u0628\u0639 \u0631\u0633\u0645\u06cc \u0628\u06af\u06cc\u0631"}
+                </>
+              )}
             </h1>
 
             <p
@@ -347,8 +374,9 @@ export default function HomeClient({
                   : "text-zinc-600"
               }`}
             >
-              اپ‌خور یک مرجع فارسی برای پیدا کردن و معرفی اپ‌ها و پروژه‌های متن‌باز است؛
-              ساده، سریع و متصل به منبع رسمی هر پروژه.
+              {isEnglish
+                ? "AppKhor helps you discover useful apps and open-source projects quickly, with direct access to each project's official sources."
+                : "\u0627\u067e\u200c\u062e\u0648\u0631 \u06cc\u06a9 \u0645\u0631\u062c\u0639 \u0641\u0627\u0631\u0633\u06cc \u0628\u0631\u0627\u06cc \u067e\u06cc\u062f\u0627 \u06a9\u0631\u062f\u0646 \u0648 \u0645\u0639\u0631\u0641\u06cc \u0627\u067e\u200c\u0647\u0627 \u0648 \u067e\u0631\u0648\u0698\u0647\u200c\u0647\u0627\u06cc \u0645\u062a\u0646\u200c\u0628\u0627\u0632 \u0627\u0633\u062a\u061b \u0633\u0627\u062f\u0647\u060c \u0633\u0631\u06cc\u0639 \u0648 \u0645\u062a\u0635\u0644 \u0628\u0647 \u0645\u0646\u0628\u0639 \u0631\u0633\u0645\u06cc \u0647\u0631 \u067e\u0631\u0648\u0698\u0647."}
             </p>
 
             <form
@@ -374,7 +402,11 @@ export default function HomeClient({
                   type="search"
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  placeholder="نام اپ یا ابزار موردنظرت را جست‌وجو کن..."
+                  placeholder={
+                    isEnglish
+                      ? "Search for an app or tool..."
+                      : "\u0646\u0627\u0645 \u0627\u067e \u06cc\u0627 \u0627\u0628\u0632\u0627\u0631 \u0645\u0648\u0631\u062f\u0646\u0638\u0631\u062a \u0631\u0627 \u062c\u0633\u062a\u200c\u0648\u062c\u0648 \u06a9\u0646..."
+                  }
                   className={`min-w-0 flex-1 bg-transparent px-1 py-3 text-sm outline-none sm:text-base ${
                     isDark
                       ? "text-white placeholder:text-zinc-600"
@@ -401,7 +433,7 @@ export default function HomeClient({
                   }}
                   className="rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-emerald-800"
                 >
-                  جست‌وجو
+                  {isEnglish ? "Search" : "\u062c\u0633\u062a\u200c\u0648\u062c\u0648"}
                 </motion.button>
               </div>
             </form>
@@ -415,41 +447,41 @@ export default function HomeClient({
             >
               <div>
                 <strong
-                  className={`ml-1 text-xl font-black ${
-                    isDark
-                      ? "text-white"
-                      : "text-zinc-900"
+                  className={`${isEnglish ? "mr-1" : "ml-1"} text-xl font-black ${
+                    isDark ? "text-white" : "text-zinc-900"
                   }`}
                 >
-                  {faNumber(stats.publishedApps)}
+                  {localizedNumber(stats.publishedApps)}
                 </strong>
-                اپ منتشرشده
+                {isEnglish
+                  ? "published apps"
+                  : "\u0627\u067e \u0645\u0646\u062a\u0634\u0631\u0634\u062f\u0647"}
               </div>
 
               <div>
                 <strong
-                  className={`ml-1 text-xl font-black ${
-                    isDark
-                      ? "text-white"
-                      : "text-zinc-900"
+                  className={`${isEnglish ? "mr-1" : "ml-1"} text-xl font-black ${
+                    isDark ? "text-white" : "text-zinc-900"
                   }`}
                 >
-                  {faNumber(stats.outboundClicks)}
+                  {localizedNumber(stats.outboundClicks)}
                 </strong>
-                مراجعه به منابع رسمی
+                {isEnglish
+                  ? "official-source visits"
+                  : "\u0645\u0631\u0627\u062c\u0639\u0647 \u0628\u0647 \u0645\u0646\u0627\u0628\u0639 \u0631\u0633\u0645\u06cc"}
               </div>
 
               <div>
                 <strong
-                  className={`ml-1 text-xl font-black ${
-                    isDark
-                      ? "text-white"
-                      : "text-zinc-900"
+                  className={`${isEnglish ? "mr-1" : "ml-1"} text-xl font-black ${
+                    isDark ? "text-white" : "text-zinc-900"
                   }`}
                 >
-                  {faNumber(stats.activeCategories)}
+                  {localizedNumber(stats.activeCategories)}
                 </strong>
-                دسته‌بندی فعال
+                {isEnglish
+                  ? "active categories"
+                  : "\u062f\u0633\u062a\u0647\u200c\u0628\u0646\u062f\u06cc \u0641\u0639\u0627\u0644"}
               </div>
             </div>
           </motion.div>
@@ -483,11 +515,15 @@ export default function HomeClient({
               <div className="mb-5 flex items-center justify-between">
                 <div>
                   <span className="text-xs font-bold text-emerald-500">
-                    پیشنهاد اپ‌خور
+                    {isEnglish
+                      ? "AppKhor picks"
+                      : "\u067e\u06cc\u0634\u0646\u0647\u0627\u062f \u0627\u067e\u200c\u062e\u0648\u0631"}
                   </span>
 
                   <h2 className="mt-1 text-xl font-black">
-                    محبوب‌های ۷ روز اخیر
+                    {isEnglish
+                      ? "Popular in the last 7 days"
+                      : "\u0645\u062d\u0628\u0648\u0628\u200c\u0647\u0627\u06cc \u06f7 \u0631\u0648\u0632 \u0627\u062e\u06cc\u0631"}
                   </h2>
                 </div>
 
@@ -498,7 +534,9 @@ export default function HomeClient({
                       : "bg-emerald-50 text-emerald-800"
                   }`}
                 >
-                  زنده
+                  {isEnglish
+                    ? "Live"
+                    : "\u0632\u0646\u062f\u0647"}
                 </span>
               </div>
 
@@ -524,7 +562,7 @@ export default function HomeClient({
                       }
                     >
                       <Link
-                        href={`/apps/${app.slug}`}
+                        href={`${localePath("/apps")}/${app.slug}`}
                         className={`flex items-center gap-4 rounded-2xl border p-4 ${
                           isDark
                             ? "border-white/5 bg-white/[0.03]"
@@ -555,19 +593,24 @@ export default function HomeClient({
                           </strong>
 
                           <span className="mt-1 block text-xs text-zinc-500">
-                            {faNumber(app.clickCount)} مراجعه این هفته
+                            {localizedNumber(app.clickCount)}{" "}
+                            {isEnglish
+                              ? "visits this week"
+                              : "\u0645\u0631\u0627\u062c\u0639\u0647 \u0627\u06cc\u0646 \u0647\u0641\u062a\u0647"}
                           </span>
                         </div>
 
                         <span className="text-sm font-black text-emerald-500">
-                          {(index + 1).toLocaleString("fa-IR")}
+                          {localizedNumber(index + 1)}
                         </span>
                       </Link>
                     </motion.div>
                   ))
                 ) : (
                   <div className="rounded-2xl border border-dashed border-white/10 p-5 text-center text-sm text-zinc-500">
-                    هنوز داده کافی برای محبوب‌ترین‌ها نداریم.
+                    {isEnglish
+                      ? "Not enough data for popular apps yet."
+                      : "\u0647\u0646\u0648\u0632 \u062f\u0627\u062f\u0647 \u06a9\u0627\u0641\u06cc \u0628\u0631\u0627\u06cc \u0645\u062d\u0628\u0648\u0628\u200c\u062a\u0631\u06cc\u0646\u200c\u0647\u0627 \u0646\u062f\u0627\u0631\u06cc\u0645."}
                   </div>
                 )}
               </div>
@@ -583,19 +626,25 @@ export default function HomeClient({
         <div className="mb-10 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div>
             <span className="text-sm font-bold text-emerald-600">
-              دسترسی سریع
+              {isEnglish
+                ? "Quick access"
+                : "\u062f\u0633\u062a\u0631\u0633\u06cc \u0633\u0631\u06cc\u0639"}
             </span>
 
             <h2 className="mt-2 text-3xl font-black">
-              دسته‌بندی اپ‌ها
+              {isEnglish
+                ? "App categories"
+                : "\u062f\u0633\u062a\u0647\u200c\u0628\u0646\u062f\u06cc \u0627\u067e\u200c\u0647\u0627"}
             </h2>
           </div>
 
           <Link
-            href="/categories"
+            href={localePath("/categories")}
             className="inline-flex items-center gap-2 text-sm font-bold text-emerald-600"
           >
-            مشاهده همه دسته‌ها
+            {isEnglish
+              ? "View all categories"
+              : "\u0645\u0634\u0627\u0647\u062f\u0647 \u0647\u0645\u0647 \u062f\u0633\u062a\u0647\u200c\u0647\u0627"}
             <ArrowIcon />
           </Link>
         </div>
@@ -626,7 +675,7 @@ export default function HomeClient({
               }}
             >
               <Link
-                href="/categories"
+                href={localePath("/categories")}
                 className={`group block rounded-2xl border p-5 transition ${
                   isDark
                     ? "border-white/10 bg-white/[0.03] hover:border-emerald-700"
@@ -641,7 +690,7 @@ export default function HomeClient({
                         : "bg-emerald-50"
                     }`}
                   >
-                    {categoryEmoji[category.slug] ?? "◈"}
+                    {categoryEmoji[category.slug] ?? "â—ˆ"}
                   </span>
 
                   <span
@@ -660,7 +709,8 @@ export default function HomeClient({
                 </h3>
 
                 <p className="mt-2 text-sm text-zinc-500">
-                  {faNumber(category.appCount)} اپ
+                  {localizedNumber(category.appCount)}{" "}
+                  {isEnglish ? "apps" : "\u0627\u067e"}
                 </p>
               </Link>
             </motion.div>
@@ -680,19 +730,25 @@ export default function HomeClient({
           <div className="mb-10 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
             <div>
               <span className="text-sm font-bold text-emerald-600">
-                تازه‌های اپ‌خور
+                {isEnglish
+                  ? "Fresh on AppKhor"
+                  : "\u062a\u0627\u0632\u0647\u200c\u0647\u0627\u06cc \u0627\u067e\u200c\u062e\u0648\u0631"}
               </span>
 
               <h2 className="mt-2 text-3xl font-black">
-                جدیدترین اپلیکیشن‌ها
+                {isEnglish
+                  ? "Latest apps"
+                  : "\u062c\u062f\u06cc\u062f\u062a\u0631\u06cc\u0646 \u0627\u067e\u0644\u06cc\u06a9\u06cc\u0634\u0646\u200c\u0647\u0627"}
               </h2>
             </div>
 
             <Link
-              href="/apps"
+              href={localePath("/apps")}
               className="inline-flex items-center gap-2 text-sm font-bold text-emerald-600"
             >
-              مشاهده همه اپ‌ها
+              {isEnglish
+                ? "View all apps"
+                : "\u0645\u0634\u0627\u0647\u062f\u0647 \u0647\u0645\u0647 \u0627\u067e\u200c\u0647\u0627"}
               <ArrowIcon />
             </Link>
           </div>
@@ -757,13 +813,18 @@ export default function HomeClient({
                               : "bg-emerald-100 text-emerald-800"
                           }`}
                         >
-                          پیشنهاد ویژه
+                          {isEnglish
+                            ? "Featured"
+                            : "\u067e\u06cc\u0634\u0646\u0647\u0627\u062f \u0648\u06cc\u0698\u0647"}
                         </span>
                       )}
                     </div>
 
                     <span className="mt-6 block text-xs font-bold text-emerald-600">
-                      {app.category ?? "بدون دسته‌بندی"}
+                      {app.category ??
+                        (isEnglish
+                          ? "Uncategorized"
+                          : "\u0628\u062f\u0648\u0646 \u062f\u0633\u062a\u0647\u200c\u0628\u0646\u062f\u06cc")}
                     </span>
 
                     <h3 className="mt-2 text-xl font-black">
@@ -789,31 +850,31 @@ export default function HomeClient({
                     >
                       <div>
                         <span className="block text-xs text-zinc-500">
-                          توسعه‌دهنده
+                          {isEnglish ? "Visits" : "\u0645\u0631\u0627\u062c\u0639\u0647"}
                         </span>
 
                         <strong className="mt-1 block truncate px-2 text-xs">
-                          {app.developerName ?? "—"}
+                          {app.developerName ?? "â€”"}
                         </strong>
                       </div>
 
                       <div>
                         <span className="block text-xs text-zinc-500">
-                          پلتفرم
+                          Ù¾Ù„ØªÙØ±Ù…
                         </span>
 
                         <strong className="mt-1 block text-xs">
-                          {faNumber(app.platformCount)}
+                          {localizedNumber(app.platformCount)}
                         </strong>
                       </div>
 
                       <div>
                         <span className="block text-xs text-zinc-500">
-                          مراجعه
+                          Ù…Ø±Ø§Ø¬Ø¹Ù‡
                         </span>
 
                         <strong className="mt-1 block text-xs">
-                          {faNumber(app.clickCount)}
+                          {localizedNumber(app.clickCount)}
                         </strong>
                       </div>
                     </div>
@@ -845,10 +906,12 @@ export default function HomeClient({
                       }}
                     >
                       <Link
-                        href={`/apps/${app.slug}`}
+                        href={`${localePath("/apps")}/${app.slug}`}
                         className="flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-emerald-800"
                       >
-                        مشاهده اپ
+                        {isEnglish
+                          ? "View app"
+                          : "\u0645\u0634\u0627\u0647\u062f\u0647 \u0627\u067e"}
                         <DownloadIcon />
                       </Link>
                     </motion.div>
@@ -871,8 +934,8 @@ export default function HomeClient({
                       }}
                     >
                       <Link
-                        href={`/apps/${app.slug}`}
-                        aria-label={`مشاهده ${displayName(app)}`}
+                        href={`${localePath("/apps")}/${app.slug}`}
+                        aria-label={isEnglish ? `View ${displayName(app)}` : `\u0645\u0634\u0627\u0647\u062f\u0647 ${displayName(app)}`}
                         className={`flex h-11 w-11 items-center justify-center rounded-xl border transition hover:border-emerald-500 hover:text-emerald-500 ${
                           isDark
                             ? "border-white/10 text-zinc-400"
@@ -894,7 +957,9 @@ export default function HomeClient({
                   : "border-zinc-200 bg-white text-zinc-600"
               }`}
             >
-              هنوز اپ منتشرشده‌ای وجود ندارد.
+              {isEnglish
+                ? "No published apps yet."
+                : "\u0647\u0646\u0648\u0632 \u0627\u067e \u0645\u0646\u062a\u0634\u0631\u0634\u062f\u0647\u200c\u0627\u06cc \u0648\u062c\u0648\u062f \u0646\u062f\u0627\u0631\u062f."}
             </div>
           )}
         </div>
@@ -929,16 +994,21 @@ export default function HomeClient({
           <div className="relative flex flex-col justify-between gap-10 lg:flex-row lg:items-center">
             <div className="max-w-2xl">
               <span className="text-sm font-bold text-emerald-300">
-                همراه اپ‌خور باش
+                {isEnglish
+                  ? "Support AppKhor"
+                  : "\u0647\u0645\u0631\u0627\u0647 \u0627\u067e\u200c\u062e\u0648\u0631 \u0628\u0627\u0634"}
               </span>
 
               <h2 className="mt-3 text-3xl font-black leading-tight md:text-4xl">
-                حمایت تو باعث بهترشدن اپ‌خور و اضافه‌شدن پروژه‌های مفید بیشتر می‌شود
+                {isEnglish
+                  ? "Your support helps AppKhor grow and feature more useful projects"
+                  : "\u062d\u0645\u0627\u06cc\u062a \u062a\u0648 \u0628\u0627\u0639\u062b \u0628\u0647\u062a\u0631\u0634\u062f\u0646 \u0627\u067e\u200c\u062e\u0648\u0631 \u0648 \u0627\u0636\u0627\u0641\u0647\u200c\u0634\u062f\u0646 \u067e\u0631\u0648\u0698\u0647\u200c\u0647\u0627\u06cc \u0645\u0641\u06cc\u062f \u0628\u06cc\u0634\u062a\u0631 \u0645\u06cc\u200c\u0634\u0648\u062f"}
               </h2>
 
               <p className="mt-5 leading-8 text-emerald-50/75">
-                اگر اپ‌خور برایت مفید بوده، می‌توانی با یک حمایت کوچک به ادامه توسعه سایت
-                و معرفی پروژه‌های متن‌باز بیشتر کمک کنی.
+                {isEnglish
+                  ? "If AppKhor has been useful to you, a small contribution can help us keep developing the site and introduce more open-source projects."
+                  : "\u0627\u06af\u0631 \u0627\u067e\u200c\u062e\u0648\u0631 \u0628\u0631\u0627\u06cc\u062a \u0645\u0641\u06cc\u062f \u0628\u0648\u062f\u0647\u060c \u0645\u06cc\u200c\u062a\u0648\u0627\u0646\u06cc \u0628\u0627 \u06cc\u06a9 \u062d\u0645\u0627\u06cc\u062a \u06a9\u0648\u0686\u06a9 \u0628\u0647 \u0627\u062f\u0627\u0645\u0647 \u062a\u0648\u0633\u0639\u0647 \u0633\u0627\u06cc\u062a \u0648 \u0645\u0639\u0631\u0641\u06cc \u067e\u0631\u0648\u0698\u0647\u200c\u0647\u0627\u06cc \u0645\u062a\u0646\u200c\u0628\u0627\u0632 \u0628\u06cc\u0634\u062a\u0631 \u06a9\u0645\u06a9 \u06a9\u0646\u06cc."}
               </p>
             </div>
 
@@ -963,7 +1033,9 @@ export default function HomeClient({
               rel="noopener noreferrer"
               className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-white px-7 py-4 font-black text-emerald-900 transition-colors hover:bg-emerald-50"
             >
-              حمایت از اپ‌خور
+              {isEnglish
+                ? "Support AppKhor"
+                : "\u062d\u0645\u0627\u06cc\u062a \u0627\u0632 \u0627\u067e\u200c\u062e\u0648\u0631"}
               <ArrowIcon />
             </motion.a>
           </div>
@@ -981,52 +1053,63 @@ export default function HomeClient({
           <div>
             <div className="flex items-center gap-3">
               <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-700 font-black text-white">
-                ا
+                {isEnglish ? "A" : "\u0627"}
               </span>
 
               <strong className="text-xl font-black">
-                اپ‌خور
+                {isEnglish ? "AppKhor" : "\u0627\u067e\u200c\u062e\u0648\u0631"}
               </strong>
             </div>
 
             <p className="mt-4 max-w-sm text-sm leading-7 text-zinc-500">
-              مرجعی ساده و فارسی برای پیدا کردن و معرفی اپ‌ها و پروژه‌های متن‌باز و
-              رفتن به منابع رسمی آن‌ها.
+              {isEnglish
+                ? "A simple place to discover useful apps and open-source projects and reach their official sources."
+                : "\u0645\u0631\u062c\u0639\u06cc \u0633\u0627\u062f\u0647 \u0648 \u0641\u0627\u0631\u0633\u06cc \u0628\u0631\u0627\u06cc \u067e\u06cc\u062f\u0627 \u06a9\u0631\u062f\u0646 \u0648 \u0645\u0639\u0631\u0641\u06cc \u0627\u067e\u200c\u0647\u0627 \u0648 \u067e\u0631\u0648\u0698\u0647\u200c\u0647\u0627\u06cc \u0645\u062a\u0646\u200c\u0628\u0627\u0632 \u0648 \u0631\u0641\u062a\u0646 \u0628\u0647 \u0645\u0646\u0627\u0628\u0639 \u0631\u0633\u0645\u06cc \u0622\u0646\u200c\u0647\u0627."}
             </p>
           </div>
 
           <div>
             <strong className="font-black">
-              دسترسی سریع
+              {isEnglish
+                ? "Quick access"
+                : "\u062f\u0633\u062a\u0631\u0633\u06cc \u0633\u0631\u06cc\u0639"}
             </strong>
 
             <div className="mt-4 flex flex-col gap-3 text-sm text-zinc-500">
               <Link
-                href="/"
+                href={localePath("/")}
                 className="hover:text-emerald-600"
               >
-                صفحه اصلی
+                {isEnglish
+                  ? "Home"
+                  : "\u0635\u0641\u062d\u0647 \u0627\u0635\u0644\u06cc"}
               </Link>
 
               <Link
-                href="/apps"
+                href={localePath("/apps")}
                 className="hover:text-emerald-600"
               >
-                همه اپ‌ها
+                {isEnglish
+                  ? "All apps"
+                  : "\u0647\u0645\u0647 \u0627\u067e\u200c\u0647\u0627"}
               </Link>
 
               <Link
-                href="/categories"
+                href={localePath("/categories")}
                 className="hover:text-emerald-600"
               >
-                دسته‌بندی‌ها
+                {isEnglish
+                  ? "Categories"
+                  : "\u062f\u0633\u062a\u0647\u200c\u0628\u0646\u062f\u06cc\u200c\u0647\u0627"}
               </Link>
             </div>
           </div>
 
           <div>
             <strong className="font-black">
-              مدیریت سایت
+              {isEnglish
+                ? "Site"
+                : "\u0645\u062f\u06cc\u0631\u06cc\u062a \u0633\u0627\u06cc\u062a"}
             </strong>
 
             <div className="mt-4 flex flex-col gap-3 text-sm text-zinc-500">
@@ -1038,7 +1121,9 @@ export default function HomeClient({
                 rel="noopener noreferrer"
                 className="hover:text-emerald-600"
               >
-                حمایت مالی
+                {isEnglish
+                  ? "Support"
+                  : "\u062d\u0645\u0627\u06cc\u062a \u0645\u0627\u0644\u06cc"}
               </a>
             </div>
           </div>
@@ -1053,11 +1138,15 @@ export default function HomeClient({
         >
           <div className="mx-auto flex max-w-7xl flex-col gap-2 px-5 py-5 text-xs text-zinc-500 sm:flex-row sm:justify-between lg:px-8">
             <span>
-              تمام حقوق برای اپ‌خور محفوظ است.
+              {isEnglish
+                ? "All rights reserved for AppKhor."
+                : "\u062a\u0645\u0627\u0645 \u062d\u0642\u0648\u0642 \u0628\u0631\u0627\u06cc \u0627\u067e\u200c\u062e\u0648\u0631 \u0645\u062d\u0641\u0648\u0638 \u0627\u0633\u062a."}
             </span>
 
             <span>
-              ساخته‌شده برای کاربران فارسی‌زبان
+              {isEnglish
+                ? "Built for people who love useful software"
+                : "\u0633\u0627\u062e\u062a\u0647\u200c\u0634\u062f\u0647 \u0628\u0631\u0627\u06cc \u06a9\u0627\u0631\u0628\u0631\u0627\u0646 \u0641\u0627\u0631\u0633\u06cc\u200c\u0632\u0628\u0627\u0646"}
             </span>
           </div>
         </div>
