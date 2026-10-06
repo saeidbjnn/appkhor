@@ -19,6 +19,7 @@ const APPS_PER_PAGE = 9;
 type AppsClientProps = {
   apps: CatalogApp[];
   initialQuery: string;
+  locale?: "fa" | "en";
 };
 
 function displayName(app: CatalogApp) {
@@ -32,10 +33,16 @@ function fallbackIcon(app: CatalogApp) {
 export default function AppsClient({
   apps,
   initialQuery,
+  locale = "fa",
 }: AppsClientProps) {
   const { isDark, mounted, toggleTheme } = useAppTheme();
   const reduceMotion = useReducedMotion();
   const router = useRouter();
+  const isEnglish = locale === "en";
+  const localePath = (path: string) =>
+    isEnglish ? `/en${path === "/" ? "" : path}` : path;
+  const localizedNumber = (value: number) =>
+    value.toLocaleString(isEnglish ? "en-US" : "fa-IR");
   const [search, setSearch] = useState(initialQuery);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedPlatform, setSelectedPlatform] = useState("");
@@ -182,12 +189,20 @@ export default function AppsClient({
 
   const sortDescription =
     sortMode === "popular"
-      ? "اپ‌ها بر اساس تعداد مراجعه به منابع رسمی مرتب شده‌اند."
+      ? isEnglish
+        ? "Apps are sorted by visits to official sources."
+        : "\u0627\u067e\u200c\u0647\u0627 \u0628\u0631 \u0627\u0633\u0627\u0633 \u062a\u0639\u062f\u0627\u062f \u0645\u0631\u0627\u062c\u0639\u0647 \u0628\u0647 \u0645\u0646\u0627\u0628\u0639 \u0631\u0633\u0645\u06cc \u0645\u0631\u062a\u0628 \u0634\u062f\u0647\u200c\u0627\u0646\u062f."
       : sortMode === "featured"
-        ? "اپ‌های برگزیده در اولویت هستند؛ سپس محبوبیت و زمان انتشار."
+        ? isEnglish
+          ? "Featured apps come first, followed by popularity and release date."
+          : "\u0627\u067e\u200c\u0647\u0627\u06cc \u0628\u0631\u06af\u0632\u06cc\u062f\u0647 \u062f\u0631 \u0627\u0648\u0644\u0648\u06cc\u062a \u0647\u0633\u062a\u0646\u062f\u061b \u0633\u067e\u0633 \u0645\u062d\u0628\u0648\u0628\u06cc\u062a \u0648 \u0632\u0645\u0627\u0646 \u0627\u0646\u062a\u0634\u0627\u0631."
         : sortMode === "name"
-          ? "اپ‌ها بر اساس نام به ترتیب الفبا مرتب شده‌اند."
-          : "اپ‌ها بر اساس زمان انتشار مرتب شده‌اند؛ جدیدترین‌ها اول نمایش داده می‌شوند.";
+          ? isEnglish
+            ? "Apps are sorted alphabetically by name."
+            : "\u0627\u067e\u200c\u0647\u0627 \u0628\u0631 \u0627\u0633\u0627\u0633 \u0646\u0627\u0645 \u0628\u0647 \u062a\u0631\u062a\u06cc\u0628 \u0627\u0644\u0641\u0628\u0627 \u0645\u0631\u062a\u0628 \u0634\u062f\u0647\u200c\u0627\u0646\u062f."
+          : isEnglish
+            ? "Apps are sorted by release date, newest first."
+            : "\u0627\u067e\u200c\u0647\u0627 \u0628\u0631 \u0627\u0633\u0627\u0633 \u0632\u0645\u0627\u0646 \u0627\u0646\u062a\u0634\u0627\u0631 \u0645\u0631\u062a\u0628 \u0634\u062f\u0647\u200c\u0627\u0646\u062f\u061b \u062c\u062f\u06cc\u062f\u062a\u0631\u06cc\u0646\u200c\u0647\u0627 \u0627\u0648\u0644 \u0646\u0645\u0627\u06cc\u0634 \u062f\u0627\u062f\u0647 \u0645\u06cc\u200c\u0634\u0648\u0646\u062f.";
 
   useEffect(() => {
     setSearch(initialQuery);
@@ -286,8 +301,8 @@ export default function AppsClient({
 
     router.push(
       queryString
-        ? "/apps?" + queryString
-        : "/apps",
+        ? localePath("/apps") + "?" + queryString
+        : localePath("/apps"),
     );
   }
 
@@ -318,8 +333,8 @@ export default function AppsClient({
 
     router.push(
       queryString
-        ? "/apps?" + queryString
-        : "/apps",
+        ? localePath("/apps") + "?" + queryString
+        : localePath("/apps"),
     );
   }
 
@@ -357,8 +372,8 @@ export default function AppsClient({
       { page },
       "",
       queryString
-        ? "/apps?" + queryString
-        : "/apps",
+        ? localePath("/apps") + "?" + queryString
+        : localePath("/apps"),
     );
   }
 
@@ -538,7 +553,9 @@ export default function AppsClient({
     }
 
     const queryString = params.toString();
-    const newUrl = queryString ? `/apps?${queryString}` : "/apps";
+    const newUrl = queryString
+      ? `${localePath("/apps")}?${queryString}`
+      : localePath("/apps");
 
     window.history.pushState(
       { page },
@@ -580,7 +597,7 @@ export default function AppsClient({
 
   return (
     <main
-      dir="rtl"
+      dir={isEnglish ? "ltr" : "rtl"}
       className={`min-h-screen transition-colors duration-300 ${
         isDark
           ? "bg-[#07120c] text-zinc-100"
@@ -598,61 +615,70 @@ export default function AppsClient({
         }`}
       >
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 lg:px-8">
-          <Link href="/" className="flex items-center gap-3">
+          <Link
+            href={localePath("/")}
+            className="flex items-center gap-3"
+          >
             <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-700 text-xl font-black text-white shadow-lg shadow-emerald-900/20">
-              ا
+              {isEnglish ? "A" : "\u0627"}
             </span>
 
             <div>
               <strong className="block text-xl font-black">
-                اپ‌خور
+                {isEnglish
+                  ? "AppKhor"
+                  : "\u0627\u067e\u200c\u062e\u0648\u0631"}
               </strong>
 
               <span
-                className={`text-xs ${
-                  isDark
-                    ? "text-zinc-400"
-                    : "text-zinc-500"
-                }`}
+                className={`text-xs ${isDark
+                  ? "text-zinc-400"
+                  : "text-zinc-500"}`}
               >
-                اپ‌های مفید، یک‌جا
+                {isEnglish
+                  ? "Useful apps, all in one place"
+                  : "\u0627\u067e\u200c\u0647\u0627\u06cc \u0645\u0641\u06cc\u062f\u060c \u06cc\u06a9\u200c\u062c\u0627"}
               </span>
             </div>
           </Link>
 
           <nav
-            className={`hidden items-center gap-8 text-sm font-bold md:flex ${
-              isDark
-                ? "text-zinc-300"
-                : "text-zinc-600"
-            }`}
+            className={`hidden items-center gap-8 text-sm font-bold md:flex ${isDark
+              ? "text-zinc-300"
+              : "text-zinc-600"}`}
           >
             <Link
-              href="/"
+              href={localePath("/")}
               className="transition hover:text-emerald-500"
             >
-              صفحه اصلی
+              {isEnglish ? "Home" : "\u0635\u0641\u062d\u0647 \u0627\u0635\u0644\u06cc"}
             </Link>
 
             <Link
-              href="/categories"
+              href={localePath("/categories")}
               className="transition hover:text-emerald-500"
             >
-              دسته‌بندی‌ها
+              {isEnglish
+                ? "Categories"
+                : "\u062f\u0633\u062a\u0647\u200c\u0628\u0646\u062f\u06cc\u200c\u0647\u0627"}
             </Link>
 
             <Link
-              href="/apps"
+              href={localePath("/apps")}
               className="text-emerald-500"
             >
-              همه اپ‌ها
+              {isEnglish
+                ? "All apps"
+                : "\u0647\u0645\u0647 \u0627\u067e\u200c\u0647\u0627"}
             </Link>
 
             <Link
-              href="/#about"
+              href={`${localePath("/")}#about`}
               className="transition hover:text-emerald-500"
             >
-              درباره ما
+              {isEnglish
+                ? "About"
+                : "\u062f\u0631\u0628\u0627\u0631\u0647 \u0645\u0627"}
             </Link>
           </nav>
 <SiteSearchButton />
@@ -676,8 +702,20 @@ export default function AppsClient({
                 stiffness: 420,
                 damping: 22,
               }}
-              aria-label="تغییر حالت نمایش"
-              title={isDark ? "حالت روشن" : "حالت شب"}
+              aria-label={
+                isEnglish
+                  ? "Change display mode"
+                  : "\u062a\u063a\u06cc\u06cc\u0631 \u062d\u0627\u0644\u062a \u0646\u0645\u0627\u06cc\u0634"
+              }
+              title={
+                isDark
+                  ? isEnglish
+                    ? "Light mode"
+                    : "\u062d\u0627\u0644\u062a \u0631\u0648\u0634\u0646"
+                  : isEnglish
+                    ? "Dark mode"
+                    : "\u062d\u0627\u0644\u062a \u0634\u0628"
+              }
               className={`flex h-11 w-11 items-center justify-center rounded-xl border text-lg transition ${
                 isDark
                   ? "border-white/10 bg-white/5 hover:bg-white/10"
@@ -716,7 +754,9 @@ export default function AppsClient({
                   : "border-emerald-200 text-emerald-800 hover:bg-emerald-50"
               }`}
             >
-              حمایت مالی
+              {isEnglish
+                ? "Support"
+                : "\u062d\u0645\u0627\u06cc\u062a \u0645\u0627\u0644\u06cc"}
             </motion.a>
 
             <LanguageSwitcher />
@@ -798,7 +838,9 @@ export default function AppsClient({
                 : "text-emerald-700"
             }`}
           >
-            دنیای اپ‌خور
+            {isEnglish
+              ? "Explore AppKhor"
+              : "\u062f\u0646\u06cc\u0627\u06cc \u0627\u067e\u200c\u062e\u0648\u0631"}
           </span>
 
           <h1
@@ -808,7 +850,9 @@ export default function AppsClient({
                 : "text-emerald-950"
             }`}
           >
-            همه اپ‌ها
+            {isEnglish
+              ? "All apps"
+              : "\u0647\u0645\u0647 \u0627\u067e\u200c\u0647\u0627"}
           </h1>
 
           <p
@@ -818,7 +862,9 @@ export default function AppsClient({
                 : "text-emerald-950/65"
             }`}
           >
-            هرچی اپ کاربردی بخوای، اینجاست؛ تازه‌ها رو ببین و ابزار مناسب خودت رو پیدا کن.
+            {isEnglish
+              ? "Discover useful apps, explore the latest releases, and find the right tools for you."
+              : "\u0647\u0631\u0686\u06cc \u0627\u067e \u06a9\u0627\u0631\u0628\u0631\u062f\u06cc \u0628\u062e\u0648\u0627\u06cc\u060c \u0627\u06cc\u0646\u062c\u0627\u0633\u062a\u061b \u062a\u0627\u0632\u0647\u200c\u0647\u0627 \u0631\u0648 \u0628\u0628\u06cc\u0646 \u0648 \u0627\u0628\u0632\u0627\u0631 \u0645\u0646\u0627\u0633\u0628 \u062e\u0648\u062f\u062a \u0631\u0648 \u067e\u06cc\u062f\u0627 \u06a9\u0646."}
           </p>
 
           <form
@@ -844,7 +890,7 @@ export default function AppsClient({
               type="search"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="نام اپ، سازنده یا دسته‌بندی را جست‌وجو کن..."
+              placeholder={isEnglish ? "Search by app, developer, or category..." : "\u0646\u0627\u0645 \u0627\u067e\u060c \u0633\u0627\u0632\u0646\u062f\u0647 \u06cc\u0627 \u062f\u0633\u062a\u0647\u200c\u0628\u0646\u062f\u06cc \u0631\u0627 \u062c\u0633\u062a\u200c\u0648\u062c\u0648 \u06a9\u0646..."}
               className={`min-w-0 flex-1 bg-transparent px-1 py-3 text-sm font-semibold outline-none sm:text-base ${
                 isDark
                   ? "text-white placeholder:text-zinc-500"
@@ -863,7 +909,9 @@ export default function AppsClient({
                     : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900"
                 }`}
               >
-                پاک کردن
+                {isEnglish
+                  ? "Clear"
+                  : "\u067e\u0627\u06a9 \u06a9\u0631\u062f\u0646"}
               </motion.button>
             )}
 
@@ -874,7 +922,9 @@ export default function AppsClient({
               transition={{ type: "spring", stiffness: 420, damping: 24 }}
               className="shrink-0 rounded-xl bg-emerald-700 px-5 py-3 text-sm font-black text-white transition hover:bg-emerald-800"
             >
-              جست‌وجو
+              {isEnglish
+                ? "Search"
+                : "\u062c\u0633\u062a\u200c\u0648\u062c\u0648"}
             </motion.button>
           </form>
 
@@ -886,13 +936,21 @@ export default function AppsClient({
             >
               {apps.length > 0 ? (
                 <>
-                  {apps.length.toLocaleString("fa-IR")} نتیجه برای{" "}
-                  <strong className="font-black">«{initialQuery}»</strong>
+                  {localizedNumber(apps.length)}{" "}
+                  {isEnglish ? "results for" : "\u0646\u062a\u06cc\u062c\u0647 \u0628\u0631\u0627\u06cc"}{" "}
+                  <strong className="font-black">
+                    {isEnglish ? `"${initialQuery}"` : `?${initialQuery}?`}
+                  </strong>
                 </>
               ) : (
                 <>
-                  نتیجه‌ای برای{" "}
-                  <strong className="font-black">«{initialQuery}»</strong> پیدا نشد.
+                  {isEnglish
+                    ? "No results found for"
+                    : "\u0646\u062a\u06cc\u062c\u0647\u200c\u0627\u06cc \u0628\u0631\u0627\u06cc"}{" "}
+                  <strong className="font-black">
+                    {isEnglish ? `"${initialQuery}"` : `?${initialQuery}?`}
+                  </strong>
+                  {isEnglish ? "." : " \u067e\u06cc\u062f\u0627 \u0646\u0634\u062f."}
                 </>
               )}
             </p>
@@ -966,11 +1024,15 @@ export default function AppsClient({
                   : "text-emerald-800"
               }`}
             >
-              تازه‌های اپ‌خور
+              {isEnglish
+                ? "Fresh on AppKhor"
+                : "\u062a\u0627\u0632\u0647\u200c\u0647\u0627\u06cc \u0627\u067e\u200c\u062e\u0648\u0631"}
             </span>
 
             <h2 className="mt-2 text-2xl font-black sm:text-3xl">
-              برنامه‌های تازه
+              {isEnglish
+                ? "Latest apps"
+                : "\u0628\u0631\u0646\u0627\u0645\u0647\u200c\u0647\u0627\u06cc \u062a\u0627\u0632\u0647"}
             </h2>
 
             <p
@@ -980,7 +1042,9 @@ export default function AppsClient({
                   : "text-emerald-950/65"
               }`}
             >
-              جدیدترین برنامه‌ها و ابزارهایی که به اپ‌خور اضافه شده‌اند.
+              {isEnglish
+                ? "The latest apps and tools added to AppKhor."
+                : "\u062c\u062f\u06cc\u062f\u062a\u0631\u06cc\u0646 \u0628\u0631\u0646\u0627\u0645\u0647\u200c\u0647\u0627 \u0648 \u0627\u0628\u0632\u0627\u0631\u0647\u0627\u06cc\u06cc \u06a9\u0647 \u0628\u0647 \u0627\u067e\u200c\u062e\u0648\u0631 \u0627\u0636\u0627\u0641\u0647 \u0634\u062f\u0647\u200c\u0627\u0646\u062f."}
             </p>
           </Reveal>
 
@@ -1032,11 +1096,11 @@ export default function AppsClient({
                               : "text-emerald-800"
                           }`}
                         >
-                          {app.category ?? "بدون دسته‌بندی"}
+                          {app.category ?? (isEnglish ? "Uncategorized" : "\u0628\u062f\u0648\u0646 \u062f\u0633\u062a\u0647\u200c\u0628\u0646\u062f\u06cc")}
                         </span>
 
                         <h3 className="mt-1 min-h-[48px] text-base font-black leading-6">
-                          {displayName(app)}
+                          {isEnglish ? app.name : displayName(app)}
                         </h3>
                       </div>
                     </div>
@@ -1070,11 +1134,15 @@ export default function AppsClient({
                       className="mt-5"
                     >
                       <Link
-                        href={`/apps/${app.slug}`}
+                        href={`${localePath("/apps")}/${app.slug}`}
                         className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-800"
                       >
-                        مشاهده اپ
-                        <span aria-hidden="true">←</span>
+                        {isEnglish
+                          ? "View app"
+                          : "\u0645\u0634\u0627\u0647\u062f\u0647 \u0627\u067e"}
+                        <span aria-hidden="true">
+                          {isEnglish ? "\u2192" : "\u2190"}
+                        </span>
                       </Link>
                     </motion.div>
                   </motion.article>
@@ -1089,7 +1157,9 @@ export default function AppsClient({
                   : "border-emerald-200 bg-white/70 text-zinc-600"
               }`}
             >
-              هنوز اپ منتشرشده‌ای وجود ندارد.
+              {isEnglish
+                ? "There are no published apps yet."
+                : "\u0647\u0646\u0648\u0632 \u0627\u067e \u0645\u0646\u062a\u0634\u0631\u0634\u062f\u0647\u200c\u0627\u06cc \u0648\u062c\u0648\u062f \u0646\u062f\u0627\u0631\u062f."}
             </div>
           )}
         </div>
@@ -1163,11 +1233,15 @@ export default function AppsClient({
         <div className="relative z-10 mx-auto max-w-7xl px-5 py-20 lg:px-8">
           <Reveal className="mb-10">
             <span className="text-sm font-bold text-emerald-600">
-              همه ابزارها
+              {isEnglish
+                ? "All tools"
+                : "\u0647\u0645\u0647 \u0627\u0628\u0632\u0627\u0631\u0647\u0627"}
             </span>
 
             <h2 className="mt-2 text-3xl font-black">
-              همه اپلیکیشن‌ها
+              {isEnglish
+                ? "All applications"
+                : "\u0647\u0645\u0647 \u0627\u067e\u0644\u06cc\u06a9\u06cc\u0634\u0646\u200c\u0647\u0627"}
             </h2>
 
             <p
@@ -1197,7 +1271,7 @@ export default function AppsClient({
                       : "text-zinc-600"
                   }`}
                 >
-                  {"دسته‌بندی"}
+                  {isEnglish ? "Platform" : "\u067e\u0644\u062a\u0641\u0631\u0645"}
                 </span>
 
                 <select
@@ -1214,7 +1288,7 @@ export default function AppsClient({
                   }`}
                 >
                   <option value="">
-                    {"همه دسته‌بندی‌ها"}
+                    {isEnglish ? "All platforms" : "\u0647\u0645\u0647 \u067e\u0644\u062a\u0641\u0631\u0645\u200c\u0647\u0627"}
                   </option>
 
                   {categoryOptions.map(
@@ -1238,7 +1312,7 @@ export default function AppsClient({
                       : "text-zinc-600"
                   }`}
                 >
-                  {"پلتفرم"}
+                  {isEnglish ? "Sort by" : "\u0645\u0631\u062a\u0628\u200c\u0633\u0627\u0632\u06cc"}
                 </span>
 
                 <select
@@ -1255,7 +1329,7 @@ export default function AppsClient({
                   }`}
                 >
                   <option value="">
-                    {"همه پلتفرم‌ها"}
+                    {isEnglish ? "Newest" : "\u062c\u062f\u06cc\u062f\u062a\u0631\u06cc\u0646"}
                   </option>
 
                   {platformOptions.map(
@@ -1279,7 +1353,7 @@ export default function AppsClient({
                       : "text-zinc-600"
                   }`}
                 >
-                  {"مرتب‌سازی"}
+                  {isEnglish ? "Most popular" : "\u0645\u062d\u0628\u0648\u0628\u200c\u062a\u0631\u06cc\u0646"}
                 </span>
 
                 <select
@@ -1296,10 +1370,10 @@ export default function AppsClient({
                   }`}
                 >
                   <option value="newest">
-                    {"جدیدترین"}
+                    {isEnglish ? "Featured" : "\u0628\u0631\u06af\u0632\u06cc\u062f\u0647\u200c\u0647\u0627"}
                   </option>
                   <option value="popular">
-                    {"محبوب‌ترین"}
+                    {isEnglish ? "App name" : "\u0646\u0627\u0645 \u0627\u067e"}
                   </option>
                   <option value="featured">
                     {"برگزیده‌ها"}
@@ -1319,10 +1393,8 @@ export default function AppsClient({
                     : "text-zinc-600"
                 }`}
               >
-                {filteredApps.length.toLocaleString(
-                  "fa-IR",
-                )}{" "}
-                {"اپ در نتایج"}
+                {localizedNumber(filteredApps.length)}{" "}
+                {isEnglish ? "apps in results" : "\u0627\u067e \u062f\u0631 \u0646\u062a\u0627\u06cc\u062c"}
               </p>
 
               {(selectedCategory ||
@@ -1337,7 +1409,9 @@ export default function AppsClient({
                       : "border-emerald-200 bg-white text-emerald-800 hover:border-emerald-400"
                   }`}
                 >
-                  {"پاک کردن فیلترها"}
+                  {isEnglish
+                    ? "Clear filters"
+                    : "\u067e\u0627\u06a9 \u06a9\u0631\u062f\u0646 \u0641\u06cc\u0644\u062a\u0631\u0647\u0627"}
                 </button>
               )}
             </div>
@@ -1380,7 +1454,7 @@ export default function AppsClient({
                   }`}
                 >
                   <Link
-                    href={`/apps/${app.slug}`}
+                    href={`${localePath("/apps")}/${app.slug}`}
                     className="flex flex-1 flex-col p-6"
                   >
                     <div className="flex items-start gap-4">
@@ -1404,14 +1478,14 @@ export default function AppsClient({
 
                       <div>
                         <span className="text-xs font-bold text-emerald-600">
-                          {app.category ?? "بدون دسته‌بندی"}
+                          {app.category ?? (isEnglish ? "Uncategorized" : "\u0628\u062f\u0648\u0646 \u062f\u0633\u062a\u0647\u200c\u0628\u0646\u062f\u06cc")}
                         </span>
 
                         <h3 className="mt-2 text-xl font-black">
-                          {displayName(app)}
+                          {isEnglish ? app.name : displayName(app)}
                         </h3>
 
-                        {app.nameFa &&
+                        {!isEnglish && app.nameFa &&
                           app.nameFa !== app.name && (
                             <p
                               dir="ltr"
@@ -1467,15 +1541,19 @@ export default function AppsClient({
                           href={`/go/${app.primaryLinkId}`}
                           className="block w-full rounded-xl bg-emerald-700 px-4 py-3 text-center text-sm font-bold text-white transition hover:bg-emerald-800"
                         >
-                          دریافت از منبع رسمی
+                          {isEnglish
+                            ? "Get from official source"
+                            : "\u062f\u0631\u06cc\u0627\u0641\u062a \u0627\u0632 \u0645\u0646\u0628\u0639 \u0631\u0633\u0645\u06cc"}
                         </Link>
                       </motion.div>
                     ) : (
                       <Link
-                        href={`/apps/${app.slug}`}
+                        href={`${localePath("/apps")}/${app.slug}`}
                         className="block w-full rounded-xl border border-emerald-700/20 px-4 py-3 text-center text-sm font-bold text-emerald-700 transition hover:bg-emerald-50"
                       >
-                        مشاهده جزئیات
+                        {isEnglish
+                          ? "View details"
+                          : "\u0645\u0634\u0627\u0647\u062f\u0647 \u062c\u0632\u0626\u06cc\u0627\u062a"}
                       </Link>
                     )}
                   </div>
@@ -1491,10 +1569,13 @@ export default function AppsClient({
               }`}
             >
               <p className="font-black">
-                {selectedCategory ||
-                selectedPlatform
-                  ? "با این فیلترها اپی پیدا نشد."
-                  : "هنوز اپ منتشرشده‌ای برای نمایش وجود ندارد."}
+                {selectedCategory || selectedPlatform
+                  ? isEnglish
+                    ? "No apps match these filters."
+                    : "\u0628\u0627 \u0627\u06cc\u0646 \u0641\u06cc\u0644\u062a\u0631\u0647\u0627 \u0627\u067e\u06cc \u067e\u06cc\u062f\u0627 \u0646\u0634\u062f."
+                  : isEnglish
+                    ? "There are no published apps to display yet."
+                    : "\u0647\u0646\u0648\u0632 \u0627\u067e \u0645\u0646\u062a\u0634\u0631\u0634\u062f\u0647\u200c\u0627\u06cc \u0628\u0631\u0627\u06cc \u0646\u0645\u0627\u06cc\u0634 \u0648\u062c\u0648\u062f \u0646\u062f\u0627\u0631\u062f."}
               </p>
             </div>
           )}
@@ -1531,7 +1612,9 @@ export default function AppsClient({
                       : "border-zinc-200 hover:border-emerald-300 hover:text-emerald-700"
                 }`}
               >
-                قبلی
+                {isEnglish
+                  ? "Previous"
+                  : "\u0642\u0628\u0644\u06cc"}
               </motion.button>
 
               {Array.from(
@@ -1566,7 +1649,7 @@ export default function AppsClient({
                         : "border-zinc-200 bg-white hover:border-emerald-300 hover:text-emerald-700"
                   }`}
                 >
-                  {page.toLocaleString("fa-IR")}
+                  {localizedNumber(page)}
                 </motion.button>
               ))}
 
@@ -1602,7 +1685,9 @@ export default function AppsClient({
                       : "border-zinc-200 hover:border-emerald-300 hover:text-emerald-700"
                 }`}
               >
-                بعدی
+                {isEnglish
+                  ? "Next"
+                  : "\u0628\u0639\u062f\u06cc"}
               </motion.button>
             </div>
           )}

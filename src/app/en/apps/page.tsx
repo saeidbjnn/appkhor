@@ -1,7 +1,10 @@
-﻿import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import type { Metadata } from "next";
-import Link from "next/link";
-import LanguageSwitcher from "@/components/language-switcher";
+import AppsClient from "../../apps/apps-client";
+import type {
+  CatalogApp,
+  CatalogFacet,
+} from "../../apps/page";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,14 +20,30 @@ export const metadata: Metadata = {
       en: "/en/apps",
     },
   },
+  openGraph: {
+    locale: "en_US",
+    url: "/en/apps",
+  },
 };
 
 type AppRow = {
+  id: string;
   slug: string;
   name: string;
   description: string;
   logo_url: string | null;
   category_name: string | null;
+  primary_link_id: string | null;
+  published_at: string | null;
+  is_featured: number;
+  click_count: number;
+};
+
+type RelationRow = {
+  app_id: string;
+  id: string;
+  slug: string;
+  name: string;
 };
 
 type PageProps = {
@@ -49,15 +68,21 @@ export default async function EnglishAppsPage({
 
   const searchPattern = `%${query}%`;
 
-  let statement = env.appkhor_db.prepare(`
+  const sql = `
     SELECT
+      apps.id,
       apps.slug,
       apps.name,
+
       COALESCE(
         apps.short_description_en,
         apps.short_description_fa
       ) AS description,
+
       apps.logo_url,
+      apps.published_at,
+      apps.is_featured,
+
       (
         SELECT COALESCE(
           categories.name_en,
@@ -74,23 +99,85 @@ export default async function EnglishAppsPage({
           categories.sort_order,
           categories.name_fa
         LIMIT 1
-      ) AS category_name
+      ) AS category_name,
+
+      (
+        SELECT app_links.id
+        FROM app_links
+        WHERE app_links.app_id = apps.id
+          AND app_links.is_active = 1
+        ORDER BY
+          app_links.is_primary DESC,
+          app_links.sort_order,
+          app_links.created_at
+        LIMIT 1
+      ) AS primary_link_id,
+
+      (
+        SELECT COUNT(*)
+        FROM app_links
+        INNER JOIN outbound_clicks
+          ON outbound_clicks.link_id =
+            app_links.id
+        WHERE app_links.app_id = apps.id
+      ) AS click_count
+
     FROM apps
+
     WHERE apps.status = 'PUBLISHED'
+
       ${
         query
           ? `AND (
               apps.name LIKE ?
                 COLLATE NOCASE
+
+              OR apps.slug LIKE ?
+                COLLATE NOCASE
+
               OR COALESCE(
                 apps.short_description_en,
                 apps.short_description_fa
               ) LIKE ?
-              OR apps.slug LIKE ?
+
+              OR COALESCE(
+                apps.description_en,
+                apps.description_fa,
+                ''
+              ) LIKE ?
+
+              OR COALESCE(
+                apps.developer_name,
+                ''
+              ) LIKE ?
                 COLLATE NOCASE
+
+              OR EXISTS (
+                SELECT 1
+                FROM app_categories
+                  search_app_categories
+
+                INNER JOIN categories
+                  search_categories
+                  ON search_categories.id =
+                    search_app_categories.category_id
+
+                WHERE
+                  search_app_categories.app_id =
+                    apps.id
+
+                  AND
+                    search_categories.is_active = 1
+
+                  AND COALESCE(
+                    search_categories.name_en,
+                    search_categories.name_fa
+                  ) LIKE ?
+              )
             )`
           : ""
       }
+
     ORDER BY
       apps.is_featured DESC,
       CASE
@@ -100,121 +187,164 @@ export default async function EnglishAppsPage({
       END,
       apps.published_at DESC,
       apps.created_at DESC
-  `);
+  `;
+
+  let statement =
+    env.appkhor_db.prepare(sql);
 
   if (query) {
     statement = statement.bind(
       searchPattern,
       searchPattern,
       searchPattern,
+      searchPattern,
+      searchPattern,
+      searchPattern,
     );
   }
 
-  const result =
-    await statement.all<AppRow>();
+  const [
+    appsResult,
+    categoryRelationsResult,
+    platformRelationsResult,
+  ] = await Promise.all([
+    statement.all<AppRow>(),
 
-  const apps = result.results ?? [];
+    env.appkhor_db
+      .prepare(
+        `SELECT
+          app_categories.app_id,
+          categories.id,
+          categories.slug,
+          COALESCE(
+            categories.name_en,
+            categories.name_fa
+          ) AS name
+
+        FROM app_categories
+
+        INNER JOIN categories
+          ON categories.id =
+            app_categories.category_id
+
+        INNER JOIN apps
+          ON apps.id =
+            app_categories.app_id
+
+        WHERE categories.is_active = 1
+          AND apps.status = 'PUBLISHED'
+
+        ORDER BY
+          categories.sort_order,
+          categories.name_fa`,
+      )
+      .all<RelationRow>(),
+
+    env.appkhor_db
+      .prepare(
+        `SELECT
+          app_platforms.app_id,
+          platforms.id,
+          platforms.slug,
+          COALESCE(
+            platforms.name_en,
+            platforms.name_fa
+          ) AS name
+
+        FROM app_platforms
+
+        INNER JOIN platforms
+          ON platforms.id =
+            app_platforms.platform_id
+
+        INNER JOIN apps
+          ON apps.id =
+            app_platforms.app_id
+
+        WHERE platforms.is_active = 1
+          AND apps.status = 'PUBLISHED'
+
+        ORDER BY
+          platforms.sort_order,
+          platforms.name_fa`,
+      )
+      .all<RelationRow>(),
+  ]);
+
+  const categoryMap =
+    new Map<string, CatalogFacet[]>();
+
+  for (
+    const row of
+    categoryRelationsResult.results ?? []
+  ) {
+    const current =
+      categoryMap.get(row.app_id) ?? [];
+
+    current.push({
+      id: row.id,
+      slug: row.slug,
+      name: row.name,
+    });
+
+    categoryMap.set(
+      row.app_id,
+      current,
+    );
+  }
+
+  const platformMap =
+    new Map<string, CatalogFacet[]>();
+
+  for (
+    const row of
+    platformRelationsResult.results ?? []
+  ) {
+    const current =
+      platformMap.get(row.app_id) ?? [];
+
+    current.push({
+      id: row.id,
+      slug: row.slug,
+      name: row.name,
+    });
+
+    platformMap.set(
+      row.app_id,
+      current,
+    );
+  }
+
+  const apps: CatalogApp[] =
+    (appsResult.results ?? []).map(
+      (row) => ({
+        id: row.id,
+        slug: row.slug,
+        name: row.name,
+        nameFa: null,
+        description: row.description,
+        logoUrl: row.logo_url,
+        category: row.category_name,
+        categories:
+          categoryMap.get(row.id) ?? [],
+        platforms:
+          platformMap.get(row.id) ?? [],
+        primaryLinkId:
+          row.primary_link_id,
+        publishedAt:
+          row.published_at,
+        featured:
+          row.is_featured === 1,
+        clickCount:
+          Number(row.click_count ?? 0),
+      }),
+    );
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-6xl px-6 py-12">
-      <div className="space-y-8">
-        <header className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-medium text-emerald-600">
-                AppKhor
-              </p>
-
-              <h1 className="text-3xl font-bold tracking-tight">
-                Browse apps
-              </h1>
-            </div>
-
-            <LanguageSwitcher />
-          </div>
-
-          <p className="max-w-2xl text-muted-foreground">
-            Discover useful software and open-source tools
-            with direct links to official sources.
-          </p>
-
-          <form
-            action="/en/apps"
-            method="get"
-            className="flex max-w-xl gap-2"
-          >
-            <input
-              type="search"
-              name="q"
-              defaultValue={query}
-              placeholder="Search apps..."
-              className="min-w-0 flex-1 rounded-xl border bg-background px-4 py-3 outline-none focus:ring-2 focus:ring-emerald-500"
-            />
-
-            <button
-              type="submit"
-              className="rounded-xl bg-emerald-600 px-5 py-3 font-medium text-white transition hover:bg-emerald-500"
-            >
-              Search
-            </button>
-          </form>
-        </header>
-
-        <div className="text-sm text-muted-foreground">
-          {apps.length.toLocaleString("en-US")}{" "}
-          {apps.length === 1 ? "app" : "apps"}
-        </div>
-
-        {apps.length > 0 ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {apps.map((app) => (
-              <Link
-                key={app.slug}
-                href={`/en/apps/${app.slug}`}
-                className="rounded-2xl border bg-card p-5 transition hover:border-emerald-500/50 hover:shadow-sm"
-              >
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    {app.logo_url ? (
-                      <img
-                        src={app.logo_url}
-                        alt=""
-                        className="h-12 w-12 rounded-xl object-contain"
-                      />
-                    ) : (
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted font-bold">
-                        {app.name
-                          .slice(0, 1)
-                          .toUpperCase()}
-                      </div>
-                    )}
-
-                    <div className="min-w-0">
-                      <h2 className="truncate font-semibold">
-                        {app.name}
-                      </h2>
-
-                      {app.category_name ? (
-                        <p className="text-sm text-muted-foreground">
-                          {app.category_name}
-                        </p>
-                      ) : null}
-                    </div>
-                  </div>
-
-                  <p className="line-clamp-3 text-sm leading-6 text-muted-foreground">
-                    {app.description}
-                  </p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        ) : (
-          <div className="rounded-2xl border p-8 text-center text-muted-foreground">
-            No apps found.
-          </div>
-        )}
-      </div>
-    </main>
+    <AppsClient
+      apps={apps}
+      initialQuery={query}
+      locale="en"
+    />
   );
 }

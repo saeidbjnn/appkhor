@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 type CurrentUser = {
@@ -18,32 +19,53 @@ type MeResponse = {
 };
 
 export default function AuthButton() {
-  const [user, setUser] = useState<CurrentUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const pathname = usePathname();
+
+  const isEnglish =
+    pathname === "/en" ||
+    pathname.startsWith("/en/");
+
+  const [user, setUser] =
+    useState<CurrentUser | null>(null);
+
+  const [isLoading, setIsLoading] =
+    useState(true);
+
+  const [isLoggingOut, setIsLoggingOut] =
+    useState(false);
 
   useEffect(() => {
     async function loadUser() {
       try {
-        const response = await fetch("/api/auth/me", {
-          method: "GET",
-          cache: "no-store",
-        });
+        const response = await fetch(
+          "/api/auth/me",
+          {
+            method: "GET",
+            cache: "no-store",
+          },
+        );
 
         if (!response.ok) {
           setUser(null);
           return;
         }
 
-        const data = (await response.json()) as MeResponse;
+        const data =
+          (await response.json()) as MeResponse;
 
-        setUser(data.authenticated ? data.user : null);
+        setUser(
+          data.authenticated
+            ? data.user
+            : null,
+        );
       } catch {
         setUser(null);
       } finally {
         setIsLoading(false);
       }
-    }    function handleProfileUpdated(
+    }
+
+    function handleProfileUpdated(
       event: Event,
     ) {
       const customEvent =
@@ -87,13 +109,18 @@ export default function AuthButton() {
     setIsLoggingOut(true);
 
     try {
-      const response = await fetch("/api/auth/logout", {
-        method: "POST",
-      });
+      const response = await fetch(
+        "/api/auth/logout",
+        {
+          method: "POST",
+        },
+      );
 
       if (response.ok) {
         setUser(null);
-        window.location.href = "/";
+
+        window.location.href =
+          isEnglish ? "/en" : "/";
       }
     } finally {
       setIsLoggingOut(false);
@@ -115,7 +142,9 @@ export default function AuthButton() {
         href="/auth"
         className="rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800"
       >
-        ورود
+        {isEnglish
+          ? "Sign in"
+          : "\u0648\u0631\u0648\u062f"}
       </Link>
     );
   }
@@ -123,7 +152,9 @@ export default function AuthButton() {
   const accountLabel =
     user.displayName?.trim() ||
     user.email?.split("@")[0] ||
-    "حساب من";
+    (isEnglish
+      ? "My account"
+      : "\u062d\u0633\u0627\u0628 \u0645\u0646");
 
   return (
     <details className="group relative">
@@ -137,21 +168,30 @@ export default function AuthButton() {
         </span>
 
         <span className="text-[10px] transition group-open:rotate-180">
-          ▼
+          {"\u25BC"}
         </span>
       </summary>
 
       <div className="absolute left-0 top-[calc(100%+0.5rem)] z-50 min-w-56 overflow-hidden rounded-2xl border border-zinc-200 bg-white p-2 text-zinc-900 shadow-xl dark:border-white/10 dark:bg-[#0b1c12] dark:text-zinc-100">
         <Link
           href="/account"
-          className="flex w-full items-center rounded-xl px-3 py-2.5 text-right text-sm font-bold transition hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-400"
+          className={`flex w-full items-center rounded-xl px-3 py-2.5 text-sm font-bold transition hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-400 ${
+            isEnglish
+              ? "text-left"
+              : "text-right"
+          }`}
         >
-          {"\u062d\u0633\u0627\u0628 \u0645\u0646"}
+          {isEnglish
+            ? "My account"
+            : "\u062d\u0633\u0627\u0628 \u0645\u0646"}
         </Link>
+
         {user.email && (
           <div className="border-b border-zinc-100 px-3 py-3 dark:border-white/10">
             <p className="text-xs text-zinc-400">
-              وارد شده با
+              {isEnglish
+                ? "Signed in as"
+                : "\u0648\u0627\u0631\u062f \u0634\u062f\u0647 \u0628\u0627"}
             </p>
 
             <p
@@ -167,9 +207,19 @@ export default function AuthButton() {
           type="button"
           onClick={handleLogout}
           disabled={isLoggingOut}
-          className="mt-1 flex w-full items-center rounded-xl px-3 py-2.5 text-right text-sm font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-950/30"
+          className={`mt-1 flex w-full items-center rounded-xl px-3 py-2.5 text-sm font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-950/30 ${
+            isEnglish
+              ? "text-left"
+              : "text-right"
+          }`}
         >
-          {isLoggingOut ? "در حال خروج..." : "خروج از حساب"}
+          {isLoggingOut
+            ? isEnglish
+              ? "Signing out..."
+              : "\u062f\u0631 \u062d\u0627\u0644 \u062e\u0631\u0648\u062c..."
+            : isEnglish
+              ? "Sign out"
+              : "\u062e\u0631\u0648\u062c \u0627\u0632 \u062d\u0633\u0627\u0628"}
         </button>
       </div>
     </details>

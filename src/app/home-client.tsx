@@ -24,16 +24,16 @@ type HomeClientProps = {
 };
 
 const categoryEmoji: Record<string, string> = {
-  productivity: "âš¡",
-  development: "ðŸ’»",
-  "internet-network": "ðŸŒ",
-  "security-privacy": "ðŸ›¡ï¸",
-  multimedia: "ðŸŽ¬",
-  "design-creative": "ðŸŽ¨",
-  "file-management": "ðŸ“",
-  "system-tools": "âš™ï¸",
-  communication: "ðŸ’¬",
-  education: "ðŸŽ“",
+  productivity: "\u26A1",
+  development: "\u{1F4BB}",
+  "internet-network": "\u{1F310}",
+  "security-privacy": "\u{1F6E1}\uFE0F",
+  multimedia: "\u{1F3AC}",
+  "design-creative": "\u{1F3A8}",
+  "file-management": "\u{1F4C1}",
+  "system-tools": "\u2699\uFE0F",
+  communication: "\u{1F4AC}",
+  education: "\u{1F393}",
 };
 
 function SearchIcon() {
@@ -90,7 +90,7 @@ function displayName(app: HomeApp) {
 }
 
 function fallbackAppIcon(app: HomeApp) {
-  return displayName(app).trim().slice(0, 1).toUpperCase() || "Ø§";
+  return displayName(app).trim().slice(0, 1).toUpperCase() || "\u0627";
 }
 
 function faNumber(value: number) {
@@ -268,8 +268,20 @@ export default function HomeClient({
                 stiffness: 420,
                 damping: 22,
               }}
-              aria-label="ØªØºÛŒÛŒØ± Ø­Ø§Ù„Øª Ù†Ù…Ø§ÛŒØ´"
-              title={isDark ? "Ø­Ø§Ù„Øª Ø±ÙˆØ´Ù†" : "Ø­Ø§Ù„Øª Ø´Ø¨"}
+              aria-label={
+                isEnglish
+                  ? "Change display mode"
+                  : "\u062a\u063a\u06cc\u06cc\u0631 \u062d\u0627\u0644\u062a \u0646\u0645\u0627\u06cc\u0634"
+              }
+              title={
+                isDark
+                  ? isEnglish
+                    ? "Light mode"
+                    : "\u062d\u0627\u0644\u062a \u0631\u0648\u0634\u0646"
+                  : isEnglish
+                    ? "Dark mode"
+                    : "\u062d\u0627\u0644\u062a \u0634\u0628"
+              }
               className={`flex h-11 w-11 items-center justify-center rounded-xl border text-lg transition ${
                 isDark
                   ? "border-white/10 bg-white/5 hover:bg-white/10"
@@ -278,9 +290,9 @@ export default function HomeClient({
             >
               {mounted
                 ? isDark
-                  ? "â˜€ï¸"
-                  : "ðŸŒ™"
-                : "ðŸŒ™"}
+                  ? "\u2600\uFE0F"
+                  : "\u{1F319}"
+                : "\u{1F319}"}
             </motion.button>
 
             <motion.a
@@ -303,7 +315,9 @@ export default function HomeClient({
                   : "border-emerald-200 text-emerald-800 hover:bg-emerald-50"
               }`}
             >
-              Ø­Ù…Ø§ÛŒØª Ù…Ø§Ù„ÛŒ
+              {isEnglish
+                ? "Support"
+                : "\u062d\u0645\u0627\u06cc\u062a \u0645\u0627\u0644\u06cc"}
             </motion.a>
 
             <LanguageSwitcher />
@@ -690,7 +704,7 @@ export default function HomeClient({
                         : "bg-emerald-50"
                     }`}
                   >
-                    {categoryEmoji[category.slug] ?? "â—ˆ"}
+                    {categoryEmoji[category.slug] ?? "\u25C8"}
                   </span>
 
                   <span
@@ -850,27 +864,9 @@ export default function HomeClient({
                     >
                       <div>
                         <span className="block text-xs text-zinc-500">
-                          {isEnglish ? "Visits" : "\u0645\u0631\u0627\u062c\u0639\u0647"}
-                        </span>
-
-                        <strong className="mt-1 block truncate px-2 text-xs">
-                          {app.developerName ?? "â€”"}
-                        </strong>
-                      </div>
-
-                      <div>
-                        <span className="block text-xs text-zinc-500">
-                          Ù¾Ù„ØªÙØ±Ù…
-                        </span>
-
-                        <strong className="mt-1 block text-xs">
-                          {localizedNumber(app.platformCount)}
-                        </strong>
-                      </div>
-
-                      <div>
-                        <span className="block text-xs text-zinc-500">
-                          Ù…Ø±Ø§Ø¬Ø¹Ù‡
+                          {isEnglish
+                            ? "Visits"
+                            : "\u0645\u0631\u0627\u062c\u0639\u0647"}
                         </span>
 
                         <strong className="mt-1 block text-xs">
